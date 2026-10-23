@@ -197,7 +197,10 @@
   /* Gilt für Handys quer und für breite Fenster am Computer. */
   @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse),
          (orientation: landscape) and (min-width: 800px) {
-    main { max-width: 1000px; display: grid; grid-template-columns: minmax(220px, 32%) 1fr; column-gap: 24px;
+    main { max-width: 1000px; display: grid; grid-template-columns: minmax(200px, 28%) 1fr; column-gap: 18px;
+      /* Seitlich nur so viel Abstand wie nötig: die Kamera-Aussparung ist schmaler als der Sicherheitsrand. */
+      padding-left: max(12px, calc(env(safe-area-inset-left) - 16px));
+      padding-right: max(12px, calc(env(safe-area-inset-right) - 16px));
       grid-template-rows: auto auto 1fr;
       grid-template-areas: "side out" "side foot" "side setup"; align-items: start; }
     .side { display: block; grid-area: side; position: sticky; top: max(10px, env(safe-area-inset-top)); }
@@ -207,8 +210,10 @@
     #out { grid-area: out; margin-top: 0; }
     .foot { grid-area: foot; }
     #setup { grid-area: setup; }
-    .dep { padding: 8px 2px; }
-    .dest span { display: inline; margin-left: 8px; }
+    .dep { padding: 6px 2px; }
+    .dest { line-height: 1.25; }
+    .dest span { font-size: 13px; }
+    .foot { margin-top: 6px; }
     .eta { display: flex; align-items: baseline; gap: 10px; }
     .eta strong { font-size: 24px; }
     .sheet { align-items: center; }
@@ -725,7 +730,9 @@ function render(deps) {
     eta.className = "eta";
     const big = document.createElement("strong");
     if (when) {
-      big.textContent = fmt(r.real);
+      // Gewählter Zeitpunkt: Uhrzeit groß, „Uhr“ klein dahinter.
+      const u = document.createElement("span"); u.className = "u"; u.textContent = "Uhr";
+      big.append(fmt(r.real), u);
     } else {
       // Ab einer Stunde in Stunden und Minuten, das liest sich leichter als „340 min“.
       // Zahlen groß, Einheiten (Std, min) kleiner.
