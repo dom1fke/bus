@@ -85,7 +85,7 @@
   .chev { display: inline-block; margin-left: 4px; transition: transform .2s ease; }
   .dep.open .chev { transform: rotate(180deg); }
   .trace { grid-column: 1 / -1; margin: 12px 0 4px 22px; border-left: 2px solid var(--line);
-    padding-left: 18px; display: grid; gap: 12px; cursor: default; }
+    padding-left: 18px; display: grid; gap: 12px; cursor: pointer; }
   .trace .note { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
   .stop { display: flex; justify-content: space-between; gap: 10px; position: relative; font-size: 15px; }
   .stop > span:first-child { min-width: 0; overflow-wrap: anywhere; }
@@ -517,7 +517,7 @@ function closeSheet() { $("sheet").hidden = true; }
 
 $("when").addEventListener("click", openSheet);
 $("out").addEventListener("click", (e) => {
-  if (e.target.closest(".trace")) return;
+  // Ein Tipp irgendwo im Eintrag, auch auf den Verlauf selbst, klappt auf oder zu.
   const row = e.target.closest(".dep[data-ref]");
   if (row) toggleRow(row);
 });
