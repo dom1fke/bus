@@ -11,12 +11,12 @@
   :root {
     --bg: #f3f5f7; --fg: #101820; --muted: #5b6875; --card: #ffffff;
     --line: #dde3e8; --accent: #0b6b4f; --accent-fg: #ffffff;
-    --late: #b3261e; --ok: #0b6b4f;
+    --late: #b3261e; --ok: #0b6b4f; --soon: #b45309;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #0f1720; --fg: #eef2f5; --muted: #93a1ae; --card: #17212c;
       --line: #263341; --accent: #3ec99a; --accent-fg: #07251b;
-      --late: #ff8a80; --ok: #3ec99a; }
+      --late: #ff8a80; --ok: #3ec99a; --soon: #ffb454; }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--fg);
@@ -46,6 +46,9 @@
   .eta { text-align: right; font-variant-numeric: tabular-nums; }
   .eta strong { font-size: 26px; display: block; line-height: 1.1; }
   .eta span { font-size: 14px; color: var(--muted); }
+  .eta.soon strong { color: var(--soon); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  @media (prefers-reduced-motion: reduce) { .eta.soon strong { animation: none; } }
   .msg { color: var(--muted); padding: 12px 2px; overflow-wrap: anywhere; }
   .msg.err { color: var(--late); }
   .foot { margin-top: 18px; font-size: 13px; color: var(--muted); display: flex;
@@ -70,7 +73,7 @@
 
   <div class="buttons">
     <button class="dir" id="btnIn" aria-pressed="false">In die Stadt
-      <small>Fondetter Straße → Wilhelmstraße</small></button>
+      <small>Fondetter Straße → Dernsches Gelände</small></button>
     <button class="dir" id="btnOut" aria-pressed="false">Aus der Stadt
       <small>Wilhelmstraße → Fondetter Straße</small></button>
   </div>
@@ -100,10 +103,11 @@
 const LINES = ["20", "21", "22", "N20"];
 const STOPS = {
   naurod: { query: "Naurod Fondetter Straße", mustContain: "fondetter", id: "3025442", name: "WI-Naurod Fondetter Straße" },
-  stadt:  { query: "Wiesbaden Wilhelmstraße",  mustContain: "wilhelmstra" }
+  stadt:  { query: "Wiesbaden Wilhelmstraße",  mustContain: "wilhelmstra" },
+  ziel:   { query: "Wiesbaden Dernsches Gelände", mustContain: "dern" }
 };
 const ROUTES = {
-  in:  { from: "naurod", to: "stadt" },
+  in:  { from: "naurod", to: "ziel" },
   out: { from: "stadt",  to: "naurod" }
 };
 
@@ -235,6 +239,7 @@ function render(deps) {
     eta.className = "eta";
     const big = document.createElement("strong");
     big.textContent = mins === 0 ? "jetzt" : mins + " min";
+    if (!r.cancelled && mins <= 5) eta.classList.add("soon");
     const t = document.createElement("span");
     t.textContent = fmt(r.real);
     eta.append(big, t);
@@ -245,7 +250,7 @@ function render(deps) {
 
   $("stamp").textContent = "Stand " + fmt(new Date());
   $("stopinfo").textContent = "Haltestellen: " + STOPS.naurod.name + " / " +
-    (store.get("stopname_stadt") || "–");
+    (store.get("stopname_stadt") || "–") + " / " + (store.get("stopname_ziel") || "–");
 }
 
 // ---- Bedienung -----------------------------------------------------------
@@ -268,7 +273,7 @@ $("saveKey").addEventListener("click", () => {
   if (w) { store.set("worker", w); $("setup").classList.remove("open"); if (current) select(current); }
 });
 $("resetIds").addEventListener("click", () => {
-  ["stop_naurod", "stop_stadt", "stopname_naurod", "stopname_stadt"].forEach(store.del);
+  ["stop_naurod", "stop_stadt", "stop_ziel", "stopname_naurod", "stopname_stadt", "stopname_ziel"].forEach(store.del);
   if (current) select(current);
 });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && current) load(); });
