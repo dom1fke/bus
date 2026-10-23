@@ -198,11 +198,15 @@
   @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse),
          (orientation: landscape) and (min-width: 800px) {
     main { max-width: 1000px; display: grid; grid-template-columns: minmax(200px, 28%) 1fr; column-gap: 18px;
-      /* Seitlich nur so viel Abstand wie nötig: die Kamera-Aussparung ist schmaler als der Sicherheitsrand. */
+      /* Seitenränder: voller Sicherheitsabstand nur auf der Seite der Kamera-Aussparung. */
       padding-left: max(12px, calc(env(safe-area-inset-left) - 16px));
       padding-right: max(12px, calc(env(safe-area-inset-right) - 16px));
       grid-template-rows: auto auto 1fr;
       grid-template-areas: "side out" "side foot" "side setup"; align-items: start; }
+    .notch-left main { padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(12px, calc(env(safe-area-inset-right) - 36px)); }
+    .notch-right main { padding-right: max(16px, env(safe-area-inset-right));
+      padding-left: max(12px, calc(env(safe-area-inset-left) - 36px)); }
     .side { display: block; grid-area: side; position: sticky; top: max(10px, env(safe-area-inset-top)); }
     .top { margin-bottom: 10px; }
     .buttons { grid-template-columns: 1fr; gap: 8px; }
@@ -1072,7 +1076,19 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("pick
 // Nach dem Drehen oder einer Größenänderung neu einpassen.
 // Kleine Höhenänderungen (Browserleiste ein-/ausgeblendet) lösen nichts aus.
 let fitTimer = null, fitW = window.innerWidth, fitH = window.innerHeight;
+// Auf welcher Seite liegt im Querformat die Kamera-Aussparung?
+// 90 = Handy nach links gedreht (Aussparung links), -90/270 = nach rechts.
+function markNotch() {
+  let a = typeof window.orientation === "number" ? window.orientation
+        : (screen.orientation && typeof screen.orientation.angle === "number" ? screen.orientation.angle : 0);
+  if (a === 270) a = -90;
+  const root = document.documentElement;
+  root.classList.toggle("notch-left", a === 90);
+  root.classList.toggle("notch-right", a === -90);
+}
+markNotch();
 function refit(force) {
+  markNotch();
   const w = window.innerWidth, hh = window.innerHeight;
   if (!force && w === fitW && Math.abs(hh - fitH) < 120) return;
   fitW = w; fitH = hh;
