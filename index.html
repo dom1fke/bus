@@ -80,6 +80,22 @@
   .dest { min-width: 0; overflow-wrap: anywhere; font-size: 17px; line-height: 1.3; }
   .dest span { display: block; color: var(--muted); font-size: 14px; }
   .late, .dest span.late { color: var(--late); font-weight: 600; }
+  .dep[data-ref] { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .dep:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+  .chev { display: inline-block; margin-left: 4px; transition: transform .2s ease; }
+  .dep.open .chev { transform: rotate(180deg); }
+  .trace { grid-column: 1 / -1; margin: 12px 0 4px 22px; border-left: 2px solid var(--line);
+    padding-left: 18px; display: grid; gap: 12px; cursor: default; }
+  .trace .note { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+  .stop { display: flex; justify-content: space-between; gap: 10px; position: relative; font-size: 15px; }
+  .stop > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+  .stop::before { content: ""; position: absolute; left: -26px; top: 6px; width: 10px; height: 10px;
+    border-radius: 50%; background: var(--bg); border: 2px solid var(--accent); }
+  .stop.first::before, .stop.last::before { background: var(--accent); }
+  .stop.last { font-weight: 600; }
+  .stop .t { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .stop .t.l { color: var(--late); font-weight: 600; }
+  @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
   .eta { text-align: right; font-variant-numeric: tabular-nums; }
   .eta strong { font-size: 28px; display: block; line-height: 1.1; }
   .eta span { font-size: 14px; color: var(--muted); }
@@ -184,6 +200,9 @@ let current = store.get("dir") || null;
 let timer = null;
 let when = null;   // gewählte Abfahrtszeit (nur im Speicher), null = jetzt
 let hiddenAt = 0;
+let routeIds = null;      // Haltestellen der aktuellen Richtung (für den Fahrtverlauf)
+let openRow = null;       // gerade aufgeklappter Eintrag
+const traceCache = new Map();
 let animateNext = true;   // Einträge nur beim Öffnen und beim Wechsel einblenden, nicht bei jeder Aktualisierung
 
 // ---- Hilfsfunktionen -----------------------------------------------------
@@ -234,6 +253,102 @@ function lineOf(d) {
   return (p.line || (d.name || "").replace(/^Bus\s*/i, "")).trim();
 }
 
+// ---- Fahrtverlauf ----------------------------------------------------------
+function journeyId(ref) {
+  if (!ref) return null;
+  if (/^https?:/i.test(ref)) {
+    try { return new URL(ref).searchParams.get("id"); } catch (e) { return null; }
+  }
+  return ref;
+}
+
+async function fetchStops(ref) {
+  const id = journeyId(ref);
+  if (!id) throw new Error("Für diese Fahrt gibt es keinen Verlauf.");
+  const hit = traceCache.get(id);
+  if (hit && Date.now() - hit.at < 60000) return hit.stops;
+  const data = await hapi("journeyDetail", { id });
+  let stops = (data.Stops && data.Stops.Stop) || [];
+  if (!Array.isArray(stops)) stops = [stops];
+  traceCache.set(id, { at: Date.now(), stops });
+  return stops;
+}
+
+function stopTimes(s) {
+  const planned = parseTime(s.arrDate || s.depDate, s.arrTime || s.depTime);
+  const real = parseTime(s.rtArrDate || s.rtDepDate || s.arrDate || s.depDate,
+                         s.rtArrTime || s.rtDepTime) || planned;
+  return { planned, real };
+}
+
+// Von der Einstiegs- bis zur Zielhaltestelle.
+function sliceStops(stops) {
+  let a = 0, b = stops.length - 1;
+  if (routeIds) {
+    const i = stops.findIndex((s) => String(s.extId || "") === String(routeIds.fromId));
+    if (i >= 0) a = i;
+    let j = stops.findIndex((s, k) => k > a && String(s.extId || "") === String(routeIds.toId));
+    if (j < 0) {
+      const key = STOPS[routeIds.toKey].mustContain;
+      j = stops.findIndex((s, k) => k > a && norm(s.name).includes(key));
+    }
+    if (j >= 0) b = j;
+  }
+  return stops.slice(a, b + 1);
+}
+
+function fillTrace(box, stops) {
+  box.textContent = "";
+  const list = sliceStops(stops);
+  if (!list.length) { box.textContent = "Kein Verlauf verfügbar."; box.className = "trace note"; return; }
+  list.forEach((s, i) => {
+    const { planned, real } = stopTimes(s);
+    const row = document.createElement("div");
+    row.className = "stop" + (i === 0 ? " first" : "") + (i === list.length - 1 ? " last" : "");
+    const n = document.createElement("span");
+    n.textContent = (s.name || "").replace(/^WI-/, "");
+    const t = document.createElement("span");
+    t.className = "t";
+    if (real) {
+      t.textContent = fmt(real);
+      if (planned && real - planned >= 60000) t.classList.add("l");
+    }
+    row.append(n, t);
+    box.appendChild(row);
+  });
+}
+
+function closeRow(el) {
+  const box = el.querySelector(".trace");
+  if (box) box.remove();
+  el.classList.remove("open");
+  el.setAttribute("aria-expanded", "false");
+  if (openRow === el) openRow = null;
+}
+
+function toggleRow(el) {
+  if (el.classList.contains("open")) { closeRow(el); return; }
+  if (openRow) closeRow(openRow);
+  const box = document.createElement("div");
+  box.className = "trace";
+  const note = document.createElement("div");
+  note.className = "note";
+  note.textContent = "Lade Verlauf …";
+  box.appendChild(note);
+  el.appendChild(box);
+  el.classList.add("open");
+  el.setAttribute("aria-expanded", "true");
+  openRow = el;
+  fetchStops(el.dataset.ref).then((stops) => {
+    if (!box.isConnected) return;
+    fillTrace(box, stops);
+    el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }).catch((e) => {
+    if (!box.isConnected) return;
+    note.textContent = "Verlauf nicht verfügbar. " + (e.message || "");
+  });
+}
+
 function fmt(d) {
   return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 }
@@ -253,6 +368,7 @@ async function load() {
   try {
     const fromId = await stopId(route.from);
     const toId = await stopId(route.to);
+    routeIds = { fromId, toId, toKey: route.to };
     const params = {
       id: fromId, direction: toId, lines: LINES.join(","), maxJourneys: 15, duration: 120
     };
@@ -275,6 +391,7 @@ function render(deps) {
   out.innerHTML = "";
   const anim = animateNext;
   animateNext = false;
+  openRow = null;
   const now = new Date();
   const ref = when || now;
   const rows = deps.map((d) => {
@@ -300,6 +417,13 @@ function render(deps) {
     const el = document.createElement("div");
     el.className = "dep";
     if (anim) { el.classList.add("fade"); el.style.setProperty("--i", i); }
+    const ref = r.d.JourneyDetailRef && r.d.JourneyDetailRef.ref;
+    if (ref) {
+      el.dataset.ref = ref;
+      el.setAttribute("role", "button");
+      el.setAttribute("tabindex", "0");
+      el.setAttribute("aria-expanded", "false");
+    }
 
     const badge = document.createElement("div");
     badge.className = "badge";
@@ -324,7 +448,14 @@ function render(deps) {
       if (!r.cancelled && mins <= 5) eta.classList.add("soon");
     }
     const t = document.createElement("span");
-    t.textContent = when ? dayLabel(r.real) : fmt(r.real);
+    t.textContent = (when ? dayLabel(r.real) : fmt(r.real)) + " ";
+    if (ref) {
+      const chev = document.createElement("span");
+      chev.className = "chev";
+      chev.setAttribute("aria-hidden", "true");
+      chev.textContent = "⌄";
+      t.appendChild(chev);
+    }
     eta.append(big, t);
 
     el.append(badge, dest, eta);
@@ -352,7 +483,8 @@ function select(dir) {
   $("out").innerHTML = '<div class="msg">Lade Abfahrten …</div>';
   load();
   clearInterval(timer);
-  timer = setInterval(() => { if (!when) load(); }, 30000);
+  // Solange ein Verlauf aufgeklappt ist, bleibt die Liste stehen.
+  timer = setInterval(() => { if (!when && !openRow) load(); }, 30000);
 }
 
 $("btnIn").addEventListener("click", () => select("in"));
@@ -384,6 +516,16 @@ function openSheet() {
 function closeSheet() { $("sheet").hidden = true; }
 
 $("when").addEventListener("click", openSheet);
+$("out").addEventListener("click", (e) => {
+  if (e.target.closest(".trace")) return;
+  const row = e.target.closest(".dep[data-ref]");
+  if (row) toggleRow(row);
+});
+$("out").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const row = e.target.closest && e.target.closest(".dep[data-ref]");
+  if (row && e.target === row) { e.preventDefault(); toggleRow(row); }
+});
 $("wApply").addEventListener("click", () => {
   const d = $("wDate").value, t = $("wTime").value;
   if (!d || !t) { $("wErr").textContent = "Bitte Tag und Uhrzeit wählen."; return; }
