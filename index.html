@@ -697,7 +697,7 @@ function render(deps) {
     const r = routeOf(cfg, current);
     const way = " von " + stopLabel(r.from) + " nach " + stopLabel(r.to);
     m.textContent = when
-      ? "Keine Abfahrten" + way + " in den 12 Stunden ab " + fmt(when) + " Uhr."
+      ? "Keine Abfahrten" + way + " in den 12 Stunden ab " + fmt(when) + "."
       : "Keine Abfahrten" + way + " in den nächsten 12 Stunden.";
     out.appendChild(m);
   }
@@ -753,7 +753,7 @@ function render(deps) {
       if (!r.cancelled && mins <= 5) eta.classList.add("soon");
     }
     const t = document.createElement("span");
-    t.textContent = (when ? dayLabel(r.real) : fmt(r.real)) + " ";
+    t.textContent = (when ? dayLabel(r.real) : fmt(r.real) + " Uhr") + " ";
     if (ref) {
       const chev = document.createElement("span");
       chev.className = "chev";
@@ -860,7 +860,7 @@ function updateWhenUI() {
   $("when").classList.toggle("on", !!when);
   $("whenClear").hidden = !when;
   $("title").classList.toggle("set", !!when);
-  $("title").textContent = when ? "Abfahrten ab " + dayLabel(when) + ", " + fmt(when) + " Uhr" : "Abfahrten jetzt";
+  $("title").textContent = when ? "Abfahrten ab " + dayLabel(when) + ", " + fmt(when) : "Abfahrten jetzt";
 }
 function setWhen(d) {
   when = d;
