@@ -68,6 +68,9 @@
   .buttons.has-sel button.dir[aria-pressed="false"] { opacity: .5; }
   .dep.fade { animation: rise .35s ease-out both; animation-delay: calc(var(--i, 0) * 80ms); }
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  /* Nach einem Wischen gleiten die Einträge aus der Wischrichtung herein. */
+  .dep.fade.slide { animation-name: slidein; animation-delay: calc(var(--i, 0) * 50ms); }
+  @keyframes slidein { from { opacity: 0; transform: translateX(var(--dx, 40px)); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) { .dep.fade { animation: none; } button.dir { transition: none; } }
   button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   #out { margin-top: 10px; display: grid; gap: 0; }
@@ -118,24 +121,27 @@
   #setup .row button { font: inherit; padding: 10px 14px; border-radius: 10px;
     border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); }
   #setup .row button.sec { background: transparent; color: var(--accent); }
-  /* Handy quer: statt der Abfahrten nur ein Hinweis zum Drehen. */
-  #rotate { display: none; }
+  /* Handy quer: zwei Spalten. Gilt nur im Querformat, das Hochformat bleibt unverändert. */
   @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
-    main, #sheet { display: none !important; }
-    #rotate { display: flex; position: fixed; inset: 0; flex-direction: column; align-items: center;
-      justify-content: center; gap: 14px; padding: 24px; text-align: center; color: var(--muted);
-      background: var(--bg); font-size: 17px; }
-    #rotate svg { width: 56px; height: 56px; color: var(--accent); }
+    main { max-width: 900px; display: grid; grid-template-columns: minmax(220px, 32%) 1fr; column-gap: 24px;
+      grid-template-rows: auto auto auto 1fr auto auto;
+      grid-template-areas: "top out" "btns out" "chip out" ". out" ". foot" ". setup"; align-items: start; }
+    .top { grid-area: top; margin-bottom: 10px; }
+    .buttons { grid-area: btns; grid-template-columns: 1fr; gap: 8px; }
+    button.dir { min-height: 0; font-size: 19px; padding: 10px 12px; }
+    #whenChip { grid-area: chip; margin-top: 10px; }
+    #out { grid-area: out; margin-top: 0; }
+    .foot { grid-area: foot; }
+    #setup { grid-area: setup; }
+    .dep { padding: 8px 2px; }
+    .dest span { display: inline; margin-left: 8px; }
+    .eta { display: flex; align-items: baseline; gap: 10px; }
+    .eta strong { font-size: 24px; }
+    .sheet { align-items: center; }
   }
 </style>
 </head>
 <body>
-<div id="rotate" aria-live="polite">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/>
-  </svg>
-  <div>Bitte iPhone hochkant halten</div>
-</div>
 <main>
   <div class="top">
     <h1>Bus Naurod ⇄ Wiesbaden</h1>
@@ -218,6 +224,7 @@ let hiddenAt = 0;
 let routeIds = null;      // Haltestellen der aktuellen Richtung (für den Fahrtverlauf)
 let openRow = null;       // gerade aufgeklappter Eintrag
 const traceCache = new Map();
+let slideFrom = 0;        // Richtung der Einblendung nach einem Wischen (px), 0 = normal
 let animateNext = true;   // Einträge nur beim Öffnen und beim Wechsel einblenden, nicht bei jeder Aktualisierung
 
 // ---- Hilfsfunktionen -----------------------------------------------------
@@ -432,6 +439,8 @@ function render(deps) {
   out.innerHTML = "";
   const anim = animateNext;
   animateNext = false;
+  const slideDx = anim ? slideFrom : 0;
+  slideFrom = 0;
   openRow = null;
   const now = new Date();
   const ref = when || now;
@@ -457,7 +466,10 @@ function render(deps) {
     const delay = Math.round((r.real - r.plan) / 60000);
     const el = document.createElement("div");
     el.className = "dep";
-    if (anim) { el.classList.add("fade"); el.style.setProperty("--i", i); }
+    if (anim) {
+      el.classList.add("fade"); el.style.setProperty("--i", i);
+      if (slideDx) { el.classList.add("slide"); el.style.setProperty("--dx", slideDx + "px"); }
+    }
     const ref = r.d.JourneyDetailRef && r.d.JourneyDetailRef.ref;
     if (ref) {
       el.dataset.ref = ref;
@@ -529,6 +541,31 @@ function select(dir) {
   // Solange ein Verlauf aufgeklappt ist, bleibt die Liste stehen.
   timer = setInterval(() => { if (!when && !openRow) load(); }, 30000);
 }
+
+// Wischen nach links: „Aus der Stadt“, nach rechts: „In die Stadt“.
+// Bewegungen, die am Bildschirmrand starten, bleiben dem Browser (Zurück/Vor) überlassen.
+let swipe = null;
+document.addEventListener("touchstart", (e) => {
+  swipe = null;
+  if (e.touches.length !== 1 || !$("sheet").hidden) return;
+  if (e.target.closest("input, #setup")) return;
+  const t = e.touches[0];
+  if (t.clientX < 24 || t.clientX > window.innerWidth - 24) return;
+  swipe = { x: t.clientX, y: t.clientY, at: Date.now() };
+}, { passive: true });
+document.addEventListener("touchend", (e) => {
+  if (!swipe) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+  const quick = Date.now() - swipe.at < 800;
+  swipe = null;
+  if (!quick || Math.abs(dx) < 60 || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
+  const dir = dx < 0 ? "out" : "in";
+  if (dir === current) return;
+  slideFrom = dx < 0 ? 40 : -40;
+  select(dir);
+}, { passive: true });
+document.addEventListener("touchcancel", () => { swipe = null; }, { passive: true });
 
 $("btnIn").addEventListener("click", () => select("in"));
 $("btnOut").addEventListener("click", () => select("out"));
