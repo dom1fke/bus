@@ -465,7 +465,9 @@ function render(deps) {
   $("stamp").textContent = "Stand " + fmt(new Date());
 
   // So viele Einträge zeigen, wie ohne Scrollen passen (mindestens 3, höchstens 6).
-  const padB = parseFloat(getComputedStyle(document.querySelector("main")).paddingBottom) || 0;
+  let padB = parseFloat(getComputedStyle(document.querySelector("main")).paddingBottom) || 0;
+  // Im normalen Browser sitzt unten die Browserleiste, dort braucht es keinen Sicherheitsabstand.
+  if (!navigator.standalone) padB = Math.min(padB, 10);
   const foot = document.querySelector(".foot");
   while (out.children.length > 3 && foot.getBoundingClientRect().bottom + padB > window.innerHeight) {
     out.removeChild(out.lastElementChild);
