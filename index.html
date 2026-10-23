@@ -326,6 +326,18 @@ function closeRow(el) {
   if (openRow === el) openRow = null;
 }
 
+function keepVisible(el) {
+  // Nach dem Aufklappen so scrollen, dass der ganze Eintrag samt Verlauf sichtbar ist.
+  requestAnimationFrame(() => {
+    const r = el.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const m = 16;
+    let dy = 0;
+    if (r.height + 2 * m >= vh || r.top < m) dy = r.top - m;
+    else if (r.bottom > vh - m) dy = r.bottom - (vh - m);
+    if (dy) window.scrollBy({ top: dy, behavior: "smooth" });
+  });
+}
 function toggleRow(el) {
   if (el.classList.contains("open")) { closeRow(el); return; }
   if (openRow) closeRow(openRow);
@@ -342,10 +354,11 @@ function toggleRow(el) {
   fetchStops(el.dataset.ref).then((stops) => {
     if (!box.isConnected) return;
     fillTrace(box, stops);
-    el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    keepVisible(el);
   }).catch((e) => {
     if (!box.isConnected) return;
     note.textContent = "Verlauf nicht verfügbar. " + (e.message || "");
+    keepVisible(el);
   });
 }
 
