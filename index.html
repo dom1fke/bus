@@ -118,9 +118,24 @@
   #setup .row button { font: inherit; padding: 10px 14px; border-radius: 10px;
     border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); }
   #setup .row button.sec { background: transparent; color: var(--accent); }
+  /* Handy quer: statt der Abfahrten nur ein Hinweis zum Drehen. */
+  #rotate { display: none; }
+  @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+    main, #sheet { display: none !important; }
+    #rotate { display: flex; position: fixed; inset: 0; flex-direction: column; align-items: center;
+      justify-content: center; gap: 14px; padding: 24px; text-align: center; color: var(--muted);
+      background: var(--bg); font-size: 17px; }
+    #rotate svg { width: 56px; height: 56px; color: var(--accent); }
+  }
 </style>
 </head>
 <body>
+<div id="rotate" aria-live="polite">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/>
+  </svg>
+  <div>Bitte iPhone hochkant halten</div>
+</div>
 <main>
   <div class="top">
     <h1>Bus Naurod ⇄ Wiesbaden</h1>
