@@ -326,6 +326,15 @@ function closeRow(el) {
   if (openRow === el) openRow = null;
 }
 
+function smoothTop(after) {
+  if (window.scrollY <= 1) { after(); return; }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  const t0 = Date.now();
+  (function wait() {
+    if (window.scrollY <= 1 || Date.now() - t0 > 900) after();
+    else requestAnimationFrame(wait);
+  })();
+}
 function keepVisible(el) {
   // Nach dem Aufklappen so scrollen, dass der ganze Eintrag samt Verlauf sichtbar ist.
   requestAnimationFrame(() => {
@@ -340,8 +349,8 @@ function keepVisible(el) {
 }
 function toggleRow(el) {
   if (el.classList.contains("open")) {
-    closeRow(el);
-    window.scrollTo({ top: 0, behavior: "smooth" });   // nach dem Zuklappen wieder ganz nach oben
+    // Erst sanft ganz nach oben scrollen, dann zuklappen, damit die Seite nicht springt.
+    smoothTop(() => closeRow(el));
     return;
   }
   if (openRow) closeRow(openRow);
@@ -515,14 +524,7 @@ function openSetup() {
   requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }));
 }
 function closeSetup(after) {
-  const done = () => { $("setup").classList.remove("open"); if (after) after(); };
-  if (window.scrollY <= 1) { done(); return; }
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  const t0 = Date.now();
-  (function wait() {
-    if (window.scrollY <= 1 || Date.now() - t0 > 900) done();
-    else requestAnimationFrame(wait);
-  })();
+  smoothTop(() => { $("setup").classList.remove("open"); if (after) after(); });
 }
 $("openSetup").addEventListener("click", () => {
   if ($("setup").classList.contains("open")) closeSetup(); else openSetup();
