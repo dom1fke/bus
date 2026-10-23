@@ -92,7 +92,7 @@
   .dep:first-child { border-bottom-color: var(--accent); }
   .badge { min-width: 48px; text-align: center; font-weight: 700; padding: 6px 8px;
     border-radius: 8px; background: var(--accent); color: var(--accent-fg); }
-  .dest { min-width: 0; overflow-wrap: anywhere; font-size: 17px; line-height: 1.3; }
+  .dest { min-width: 0; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; font-size: 17px; line-height: 1.3; }
   .dest span { display: block; color: var(--muted); font-size: 14px; }
   .late, .dest span.late { color: var(--late); font-weight: 600; }
   .dep { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -726,17 +726,15 @@ function render(deps) {
     if (when) {
       big.textContent = fmt(r.real);
     } else {
-      // Ab einer Stunde die Uhrzeit groß zeigen, das liest sich leichter als „340 min“.
-      big.textContent = mins === 0 ? "jetzt" : mins >= 60 ? fmt(r.real) : mins + " min";
+      // Ab einer Stunde in Stunden und Minuten, das liest sich leichter als „340 min“.
+      const hh = Math.floor(mins / 60), mm = mins % 60;
+      big.textContent = mins === 0 ? "jetzt"
+        : mins < 60 ? mins + " min"
+        : hh + " Std" + (mm ? " " + mm : "");
       if (!r.cancelled && mins <= 5) eta.classList.add("soon");
     }
     const t = document.createElement("span");
-    let small = when ? dayLabel(r.real) : fmt(r.real);
-    if (!when && mins >= 60) {
-      const hh = Math.floor(mins / 60), mm = mins % 60;
-      small = "in " + hh + " Std" + (mm ? " " + mm + " Min" : "");
-    }
-    t.textContent = small + " ";
+    t.textContent = (when ? dayLabel(r.real) : fmt(r.real)) + " ";
     if (ref) {
       const chev = document.createElement("span");
       chev.className = "chev";
