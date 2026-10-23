@@ -85,8 +85,6 @@
   <section id="setup">
     <label for="worker">Worker-Adresse (https://….workers.dev)</label>
     <input id="worker" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false">
-    <label for="key" style="margin-top:12px">RMV-Zugangsschlüssel (leer lassen, wenn er im Worker hinterlegt ist)</label>
-    <input id="key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
     <div class="msg" id="stopinfo"></div>
     <div class="row">
       <button id="saveKey">Speichern</button>
@@ -128,12 +126,11 @@ function norm(s) {
 async function hapi(path, params) {
   let base = (store.get("worker") || "").trim().replace(/\/+$/, "");
   if (!base) throw new Error("Noch keine Worker-Adresse gespeichert. Unter „Einstellungen“ eintragen.");
-  const key = (store.get("key") || "").trim();
   const qs = new URLSearchParams(params);
   let res;
   try {
-    // Ohne eigenen Schlüssel verwendet der Worker sein hinterlegtes Secret.
-    res = await fetch(base + "/" + path + "?" + qs.toString(), key ? { headers: { "X-Access-Id": key } } : {});
+    // Der RMV-Schlüssel liegt als Secret im Worker, nicht in der App.
+    res = await fetch(base + "/" + path + "?" + qs.toString());
   } catch (e) {
     throw new Error("Keine Verbindung zum Worker. Adresse und Internet prüfen.");
   }
@@ -268,8 +265,7 @@ $("btnOut").addEventListener("click", () => select("out"));
 $("openSetup").addEventListener("click", () => $("setup").classList.toggle("open"));
 $("saveKey").addEventListener("click", () => {
   const w = $("worker").value.trim();
-  const k = $("key").value.trim();
-  if (w) { store.set("worker", w); if (k) store.set("key", k); else store.del("key"); $("setup").classList.remove("open"); if (current) select(current); }
+  if (w) { store.set("worker", w); $("setup").classList.remove("open"); if (current) select(current); }
 });
 $("resetIds").addEventListener("click", () => {
   ["stop_naurod", "stop_stadt", "stopname_naurod", "stopname_stadt"].forEach(store.del);
@@ -278,7 +274,6 @@ $("resetIds").addEventListener("click", () => {
 document.addEventListener("visibilitychange", () => { if (!document.hidden && current) load(); });
 
 $("worker").value = store.get("worker") || "";
-$("key").value = store.get("key") || "";
 if (!store.get("worker")) $("setup").classList.add("open");
 if (current) select(current);
 </script>
