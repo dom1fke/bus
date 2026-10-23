@@ -13,6 +13,7 @@
     --bg: #f3f5f7; --fg: #101820; --muted: #5b6875; --card: #ffffff;
     --line: #dde3e8; --accent: #0b6b4f; --accent-fg: #ffffff;
     --late: #b3261e; --ok: #0b6b4f; --soon: #b45309;
+    color-scheme: light dark;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #0f1720; --fg: #eef2f5; --muted: #93a1ae; --card: #17212c;
@@ -28,12 +29,33 @@
   h1 { font-size: 15px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
     color: var(--muted); margin: 0; min-width: 0; }
   .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 16px; }
-  #refresh { flex: none; width: 44px; height: 44px; display: grid; place-items: center;
+  .tools { display: flex; gap: 8px; flex: none; }
+  .iconbtn { flex: none; width: 44px; height: 44px; display: grid; place-items: center;
     border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--accent); padding: 0; }
-  #refresh svg { display: block; }
+  .iconbtn svg { display: block; }
+  .iconbtn.on { background: var(--accent); color: var(--accent-fg); }
   #refresh.spin svg { animation: spin .9s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { #refresh.spin svg { animation: none; } #refresh.spin { opacity: .5; } }
+  .chip { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px;
+    padding: 6px 6px 6px 14px; border: 1px solid var(--accent); border-radius: 12px; color: var(--accent); font-size: 15px; }
+  .chip[hidden] { display: none; }
+  .chip button { flex: none; width: 36px; height: 36px; border: 0; border-radius: 8px;
+    background: transparent; color: inherit; font: inherit; font-size: 18px; }
+  .sheet { position: fixed; inset: 0; z-index: 20; background: rgba(0, 0, 0, .5);
+    display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
+  .sheet[hidden] { display: none; }
+  .panel { width: 100%; max-width: 480px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px; padding: 16px; margin-bottom: env(safe-area-inset-bottom, 0px); }
+  .panel h2 { font-size: 17px; margin: 0; }
+  .panel label { display: block; font-size: 14px; color: var(--muted); margin: 14px 0 6px; }
+  .panel input { width: 100%; font: inherit; padding: 12px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+  .panel .row { display: flex; gap: 8px; margin-top: 16px; }
+  .panel .row button { flex: 1; font: inherit; padding: 12px; border-radius: 10px;
+    border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); }
+  .panel .row button.sec { background: transparent; color: var(--accent); }
+  .panel .err { color: var(--late); font-size: 14px; margin-top: 8px; }
   .buttons { display: grid; gap: 12px; }
   button.dir { font: inherit; font-size: 22px; font-weight: 700; padding: 22px 16px;
     border-radius: 14px; border: 2px solid var(--accent); background: transparent;
@@ -78,10 +100,15 @@
 <body>
 <main>
   <div class="top">
-    <h1>Bus Naurod ⇄ Wiesbaden</h1>
-    <button id="refresh" type="button" aria-label="Abfahrten aktualisieren">
+    <h1>Bus Naurod</h1>
+    <div class="tools">
+    <button id="when" class="iconbtn" type="button" aria-label="Tag und Uhrzeit wählen">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+    </button>
+    <button id="refresh" class="iconbtn" type="button" aria-label="Abfahrten aktualisieren">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
     </button>
+    </div>
   </div>
 
   <div class="buttons">
@@ -89,6 +116,11 @@
       <small>Fondetter Straße → Dernsches Gelände</small></button>
     <button class="dir" id="btnOut" aria-pressed="false">Aus der Stadt
       <small>Wilhelmstraße → Fondetter Straße</small></button>
+  </div>
+
+  <div id="whenChip" class="chip" hidden>
+    <span id="whenText"></span>
+    <button id="whenClear" type="button" aria-label="Zurück zu Jetzt">✕</button>
   </div>
 
   <div id="out" aria-live="polite"></div>
@@ -105,6 +137,21 @@
       <button id="saveKey">Speichern</button>    </div>
   </section>
 </main>
+
+<div id="sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="panel">
+    <h2 id="sheetTitle">Abfahrtszeit wählen</h2>
+    <label for="wDate">Tag</label>
+    <input id="wDate" type="date">
+    <label for="wTime">Uhrzeit</label>
+    <input id="wTime" type="time">
+    <div class="err" id="wErr" aria-live="polite"></div>
+    <div class="row">
+      <button id="wApply" type="button">Übernehmen</button>
+      <button id="wNow" class="sec" type="button">Zurück zu Jetzt</button>
+    </div>
+  </div>
+</div>
 
 <script>
 "use strict";
@@ -131,6 +178,8 @@ const store = {
 const $ = (id) => document.getElementById(id);
 let current = store.get("dir") || null;
 let timer = null;
+let when = null;   // gewählte Abfahrtszeit (nur im Speicher), null = jetzt
+let hiddenAt = 0;
 
 // ---- Hilfsfunktionen -----------------------------------------------------
 function norm(s) {
@@ -184,6 +233,13 @@ function fmt(d) {
   return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 }
 
+const p2 = (n) => String(n).padStart(2, "0");
+const ymd = (d) => d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
+const hm = (d) => p2(d.getHours()) + ":" + p2(d.getMinutes());
+function dayLabel(d) {
+  return d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+}
+
 // ---- Abfrage -------------------------------------------------------------
 async function load() {
   const out = $("out");
@@ -193,9 +249,11 @@ async function load() {
   try {
     const fromId = await stopId(route.from);
     const toId = await stopId(route.to);
-    let data = await hapi("departureBoard", {
+    const params = {
       id: fromId, direction: toId, lines: LINES.join(","), maxJourneys: 12, duration: 120
-    });
+    };
+    if (when) { params.date = ymd(when); params.time = hm(when); }
+    let data = await hapi("departureBoard", params);
     let deps = data.Departure || [];
     deps = deps.filter((d) => LINES.includes(lineOf(d)));
     render(deps);
@@ -214,18 +272,21 @@ function render(deps) {
   const out = $("out");
   out.innerHTML = "";
   const now = new Date();
+  const ref = when || now;
   const rows = deps.map((d) => {
     const plan = parseTime(d.date, d.time);
     const real = parseTime(d.rtDate || d.date, d.rtTime) || plan;
     return { d, plan, real, cancelled: d.cancelled === true || d.cancelled === "true" };
-  }).filter((r) => r.real && r.real >= new Date(now.getTime() - 30000))
+  }).filter((r) => r.real && r.real >= new Date(ref.getTime() - 30000))
     .sort((a, b) => a.real - b.real)
     .slice(0, 4);
 
   if (!rows.length) {
     const m = document.createElement("div");
     m.className = "msg";
-    m.textContent = "Keine Abfahrten der Linien 20, 21, 22 oder N20 in den nächsten 2 Stunden.";
+    m.textContent = when
+      ? "Keine Abfahrten der Linien 20, 21, 22 oder N20 in den 2 Stunden ab " + fmt(when) + "."
+      : "Keine Abfahrten der Linien 20, 21, 22 oder N20 in den nächsten 2 Stunden.";
     out.appendChild(m);
   }
 
@@ -251,10 +312,14 @@ function render(deps) {
     const eta = document.createElement("div");
     eta.className = "eta";
     const big = document.createElement("strong");
-    big.textContent = mins === 0 ? "jetzt" : mins + " min";
-    if (!r.cancelled && mins <= 5) eta.classList.add("soon");
+    if (when) {
+      big.textContent = fmt(r.real);
+    } else {
+      big.textContent = mins === 0 ? "jetzt" : mins + " min";
+      if (!r.cancelled && mins <= 5) eta.classList.add("soon");
+    }
     const t = document.createElement("span");
-    t.textContent = fmt(r.real);
+    t.textContent = when ? dayLabel(r.real) : fmt(r.real);
     eta.append(big, t);
 
     el.append(badge, dest, eta);
@@ -272,18 +337,64 @@ function select(dir) {
   $("out").innerHTML = '<div class="msg">Lade Abfahrten …</div>';
   load();
   clearInterval(timer);
-  timer = setInterval(load, 30000);
+  timer = setInterval(() => { if (!when) load(); }, 30000);
 }
 
 $("btnIn").addEventListener("click", () => select("in"));
 $("btnOut").addEventListener("click", () => select("out"));
 $("openSetup").addEventListener("click", () => $("setup").classList.toggle("open"));
 $("refresh").addEventListener("click", () => { if (current) load(); });
+
+function updateWhenUI() {
+  $("when").classList.toggle("on", !!when);
+  if (when) {
+    $("whenText").textContent = "Abfahrten ab " + dayLabel(when) + ", " + fmt(when);
+    $("whenChip").hidden = false;
+  } else {
+    $("whenChip").hidden = true;
+  }
+}
+function setWhen(d) {
+  when = d;
+  updateWhenUI();
+  if (current) select(current);
+}
+function openSheet() {
+  const base = when || new Date();
+  $("wDate").min = ymd(new Date());
+  $("wDate").value = ymd(base);
+  $("wTime").value = hm(base);
+  $("wErr").textContent = "";
+  $("sheet").hidden = false;
+}
+function closeSheet() { $("sheet").hidden = true; }
+
+$("when").addEventListener("click", openSheet);
+$("wApply").addEventListener("click", () => {
+  const d = $("wDate").value, t = $("wTime").value;
+  if (!d || !t) { $("wErr").textContent = "Bitte Tag und Uhrzeit wählen."; return; }
+  const sel = new Date(d + "T" + t);
+  if (isNaN(sel.getTime())) { $("wErr").textContent = "Diese Zeit ist ungültig."; return; }
+  if (sel.getTime() < Date.now() - 5 * 60000) {
+    $("wErr").textContent = "Die gewählte Zeit liegt in der Vergangenheit."; return;
+  }
+  closeSheet();
+  setWhen(sel.getTime() - Date.now() < 120000 ? null : sel);
+});
+$("wNow").addEventListener("click", () => { closeSheet(); setWhen(null); });
+$("whenClear").addEventListener("click", () => setWhen(null));
+$("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) closeSheet(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("sheet").hidden) closeSheet(); });
 $("saveKey").addEventListener("click", () => {
   const w = $("worker").value.trim();
   if (w) { store.set("worker", w); $("setup").classList.remove("open"); if (current) select(current); }
 });
-document.addEventListener("visibilitychange", () => { if (!document.hidden && current) load(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  // Nach längerer Pause zurück auf „Jetzt“, damit nichts Veraltetes stehen bleibt.
+  if (when && Date.now() - hiddenAt > 300000) setWhen(null);
+  else if (current && !when) load();
+});
 
 $("worker").value = store.get("worker") || "";
 if (!store.get("worker")) $("setup").classList.add("open");
