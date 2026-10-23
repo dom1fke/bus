@@ -122,6 +122,13 @@
   .msg.err { color: var(--late); }
   .foot { margin-top: 10px; font-size: 13px; color: var(--muted); display: flex;
     justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  /* „Stand …“ zum Antippen: lädt sofort neu */
+  .foot #stamp { text-decoration: none; -webkit-tap-highlight-color: transparent; }
+  #stamp::after { content: "↻"; display: inline-block; margin-left: 6px; }
+  #stamp:empty::after { content: none; }
+  #stamp.busy::after { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { #stamp.busy::after { animation: none; opacity: .5; } }
   .foot button { font: inherit; font-size: 13px; background: none; border: 0; color: var(--muted);
     text-decoration: underline; padding: 4px 0; }
   #setup { margin-top: 20px; display: none; background: var(--card); border: 1px solid var(--line);
@@ -230,7 +237,7 @@
   <div id="out" aria-live="polite"></div>
 
   <div class="foot">
-    <span id="stamp"></span>
+    <button id="stamp" type="button" aria-label="Jetzt aktualisieren"></button>
     <button id="openSetup">Einstellungen</button>
   </div>
 
@@ -794,6 +801,18 @@ document.addEventListener("touchend", (e) => {
   select(dir);
 }, { passive: true });
 document.addEventListener("touchcancel", () => { swipe = null; }, { passive: true });
+
+// Antippen von „Stand …“ aktualisiert sofort.
+$("stamp").addEventListener("click", async () => {
+  if (!current || $("stamp").classList.contains("busy")) return;
+  if (openRow) closeRow(openRow);
+  $("stamp").classList.add("busy");
+  const t0 = Date.now();
+  await load();
+  prefetchOther();
+  // Das Symbol kurz sichtbar drehen lassen, auch wenn die Antwort sehr schnell kommt.
+  setTimeout(() => $("stamp").classList.remove("busy"), Math.max(0, 600 - (Date.now() - t0)));
+});
 
 $("btnIn").addEventListener("click", () => select("in"));
 $("btnOut").addEventListener("click", () => select("out"));
