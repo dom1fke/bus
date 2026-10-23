@@ -83,8 +83,11 @@
   </div>
 
   <section id="setup">
-    <label for="key">RMV-Zugangsschlüssel (accessId)</label>
+    <label for="worker">Worker-Adresse (https://….workers.dev)</label>
+    <input id="worker" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <label for="key" style="margin-top:12px">RMV-Zugangsschlüssel (leer lassen, wenn er im Worker hinterlegt ist)</label>
     <input id="key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="msg" id="stopinfo"></div>
     <div class="row">
       <button id="saveKey">Speichern</button>
       <button id="resetIds" class="sec">Haltestellen neu suchen</button>
@@ -95,10 +98,10 @@
 <script>
 "use strict";
 // ---- Konfiguration -------------------------------------------------------
-const API = "https://www.rmv.de/hapi";
+// Adresse deines Cloudflare Workers; wird in den Einstellungen gespeichert.
 const LINES = ["20", "21", "22", "N20"];
 const STOPS = {
-  naurod: { query: "Naurod Fondetter Straße", mustContain: "fondetter" },
+  naurod: { query: "Naurod Fondetter Straße", mustContain: "fondetter", id: "3025442", name: "WI-Naurod Fondetter Straße" },
   stadt:  { query: "Wiesbaden Wilhelmstraße",  mustContain: "wilhelmstra" }
 };
 const ROUTES = {
@@ -123,20 +126,28 @@ function norm(s) {
 }
 
 async function hapi(path, params) {
-  const key = store.get("key");
-  if (!key) throw new Error("Noch kein Zugangsschlüssel gespeichert. Unter „Einstellungen“ eintragen.");
-  const qs = new URLSearchParams({ ...params, format: "json", accessId: key });
-  const res = await fetch(API + "/" + path + "?" + qs.toString());
-  if (!res.ok) throw new Error("RMV antwortet mit Fehler " + res.status + ".");
+  let base = (store.get("worker") || "").trim().replace(/\/+$/, "");
+  if (!base) throw new Error("Noch keine Worker-Adresse gespeichert. Unter „Einstellungen“ eintragen.");
+  const key = (store.get("key") || "").trim();
+  const qs = new URLSearchParams(params);
+  let res;
+  try {
+    // Ohne eigenen Schlüssel verwendet der Worker sein hinterlegtes Secret.
+    res = await fetch(base + "/" + path + "?" + qs.toString(), key ? { headers: { "X-Access-Id": key } } : {});
+  } catch (e) {
+    throw new Error("Keine Verbindung zum Worker. Adresse und Internet prüfen.");
+  }
+  if (!res.ok) throw new Error("Worker/RMV antwortet mit Fehler " + res.status + ".");
   const data = await res.json();
   if (data.errorCode) throw new Error("RMV: " + (data.errorText || data.errorCode));
   return data;
 }
 
 async function stopId(name) {
+  const cfg = STOPS[name];
+  if (cfg.id) return cfg.id;
   const cached = store.get("stop_" + name);
   if (cached) return cached;
-  const cfg = STOPS[name];
   const data = await hapi("location.name", { input: cfg.query });
   const list = (data.stopLocationOrCoordLocation || [])
     .map((x) => x.StopLocation).filter(Boolean);
@@ -236,6 +247,8 @@ function render(deps) {
   });
 
   $("stamp").textContent = "Stand " + fmt(new Date());
+  $("stopinfo").textContent = "Haltestellen: " + STOPS.naurod.name + " / " +
+    (store.get("stopname_stadt") || "–");
 }
 
 // ---- Bedienung -----------------------------------------------------------
@@ -254,8 +267,9 @@ $("btnIn").addEventListener("click", () => select("in"));
 $("btnOut").addEventListener("click", () => select("out"));
 $("openSetup").addEventListener("click", () => $("setup").classList.toggle("open"));
 $("saveKey").addEventListener("click", () => {
-  const v = $("key").value.trim();
-  if (v) { store.set("key", v); $("key").value = ""; $("setup").classList.remove("open"); if (current) select(current); }
+  const w = $("worker").value.trim();
+  const k = $("key").value.trim();
+  if (w) { store.set("worker", w); if (k) store.set("key", k); else store.del("key"); $("setup").classList.remove("open"); if (current) select(current); }
 });
 $("resetIds").addEventListener("click", () => {
   ["stop_naurod", "stop_stadt", "stopname_naurod", "stopname_stadt"].forEach(store.del);
@@ -263,7 +277,9 @@ $("resetIds").addEventListener("click", () => {
 });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && current) load(); });
 
-if (!store.get("key")) $("setup").classList.add("open");
+$("worker").value = store.get("worker") || "";
+$("key").value = store.get("key") || "";
+if (!store.get("worker")) $("setup").classList.add("open");
 if (current) select(current);
 </script>
 </body>
