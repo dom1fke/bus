@@ -113,7 +113,8 @@
   .stop .t.l { color: var(--late); font-weight: 600; }
   @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
   .eta { text-align: right; font-variant-numeric: tabular-nums; }
-  .eta strong { font-size: 28px; display: block; line-height: 1.1; }
+  .eta strong { font-size: 28px; display: block; line-height: 1.1; white-space: nowrap; }
+  .eta strong .u { font-size: .6em; font-weight: 600; color: inherit; margin-left: .15em; }
   .eta span { font-size: 14px; color: var(--muted); }
   .eta.soon strong { color: var(--soon); animation: pulse 1.4s ease-in-out infinite; }
   @keyframes pulse { 50% { opacity: .45; } }
@@ -727,10 +728,15 @@ function render(deps) {
       big.textContent = fmt(r.real);
     } else {
       // Ab einer Stunde in Stunden und Minuten, das liest sich leichter als „340 min“.
+      // Zahlen groß, Einheiten (Std, min) kleiner.
       const hh = Math.floor(mins / 60), mm = mins % 60;
-      big.textContent = mins === 0 ? "jetzt"
-        : mins < 60 ? mins + " min"
-        : hh + " Std" + (mm ? " " + mm : "");
+      const part = (n, u) => {
+        const s = document.createElement("span"); s.className = "u"; s.textContent = u;
+        big.append(String(n), s);
+      };
+      if (mins === 0) big.textContent = "jetzt";
+      else if (mins < 60) part(mins, "min");
+      else { part(hh, "Std"); if (mm) { big.append(" "); part(mm, "min"); } }
       if (!r.cancelled && mins <= 5) eta.classList.add("soon");
     }
     const t = document.createElement("span");
