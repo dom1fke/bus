@@ -508,7 +508,25 @@ function select(dir) {
 
 $("btnIn").addEventListener("click", () => select("in"));
 $("btnOut").addEventListener("click", () => select("out"));
-$("openSetup").addEventListener("click", () => $("setup").classList.toggle("open"));
+// Einstellungen: beim Öffnen sanft nach unten scrollen, beim Schließen erst sanft
+// nach oben und dann ausblenden, damit die Seite nicht springt.
+function openSetup() {
+  $("setup").classList.add("open");
+  requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }));
+}
+function closeSetup(after) {
+  const done = () => { $("setup").classList.remove("open"); if (after) after(); };
+  if (window.scrollY <= 1) { done(); return; }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  const t0 = Date.now();
+  (function wait() {
+    if (window.scrollY <= 1 || Date.now() - t0 > 900) done();
+    else requestAnimationFrame(wait);
+  })();
+}
+$("openSetup").addEventListener("click", () => {
+  if ($("setup").classList.contains("open")) closeSetup(); else openSetup();
+});
 
 function updateWhenUI() {
   $("when").classList.toggle("on", !!when);
@@ -562,7 +580,7 @@ $("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) close
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("sheet").hidden) closeSheet(); });
 $("saveKey").addEventListener("click", () => {
   const w = $("worker").value.trim();
-  if (w) { store.set("worker", w); $("setup").classList.remove("open"); if (current) select(current); }
+  if (w) { store.set("worker", w); closeSetup(() => { if (current) select(current); }); }
 });
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) { hiddenAt = Date.now(); return; }
