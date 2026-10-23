@@ -339,7 +339,11 @@ function keepVisible(el) {
   });
 }
 function toggleRow(el) {
-  if (el.classList.contains("open")) { closeRow(el); return; }
+  if (el.classList.contains("open")) {
+    closeRow(el);
+    window.scrollTo({ top: 0, behavior: "smooth" });   // nach dem Zuklappen wieder ganz nach oben
+    return;
+  }
   if (openRow) closeRow(openRow);
   const box = document.createElement("div");
   box.className = "trace";
