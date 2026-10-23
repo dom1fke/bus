@@ -58,7 +58,7 @@
   .panel .row button.sec { background: transparent; color: var(--accent); }
   .panel .err { color: var(--late); font-size: 14px; margin-top: 8px; }
   .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  button.dir { font: inherit; font-size: 22px; font-weight: 700; padding: 16px 14px 14px; min-height: 112px;
+  button.dir { display: block; width: 100%; font: inherit; font-size: 22px; font-weight: 700; padding: 16px 14px 14px; min-height: 112px;
     border-radius: 14px; border: 2px solid var(--accent); background: transparent;
     color: var(--accent); text-align: left; position: relative;
     transition: opacity .25s ease, background-color .25s ease, color .25s ease; }
@@ -197,7 +197,7 @@
 <main>
   <div class="side">
   <div class="top">
-    <h1>Bus Naurod ⇄ Wiesbaden</h1>
+    <h1 id="title">Bus Naurod ⇄ Wiesbaden</h1>
     <div class="tools">
     <button id="when" class="iconbtn" type="button" aria-label="Tag und Uhrzeit wählen">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
@@ -330,7 +330,22 @@ function seenLines(fromId, toId) {
 }
 const byLine = (a, b) => a.localeCompare(b, "de", { numeric: true });
 
+// Ort einer Haltestelle, z. B. „WI-Naurod Fondetter Straße“ → „Naurod“,
+// „Wiesbaden Dernsches Gelände“ → „Wiesbaden“.
+function placeOf(s) {
+  const n = ((s && (s.name || s.query)) || "").replace(/^WI-/i, "").trim();
+  return n.split(/\s+/)[0] || "";
+}
+function applyTitle() {
+  const r = routeOf(cfg, "in");
+  let a = placeOf(r.from), b = placeOf(r.to);
+  // Liegen beide Haltestellen im selben Ort, die Haltestellen selbst nennen.
+  if (!a || !b || a === b) { a = stopLabel(r.from); b = stopLabel(r.to); }
+  $("title").textContent = "Bus " + a + " ⇄ " + b;
+  document.title = "Bus " + a;
+}
 function applyTiles() {
+  applyTitle();
   [["in", "btnIn"], ["out", "btnOut"]].forEach(([dir, id]) => {
     const r = routeOf(cfg, dir);
     const b = $(id);
@@ -934,15 +949,30 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("pick
 // Nach dem Drehen oder einer Größenänderung neu einpassen.
 // Kleine Höhenänderungen (Browserleiste ein-/ausgeblendet) lösen nichts aus.
 let fitTimer = null, fitW = window.innerWidth, fitH = window.innerHeight;
+function refit(force) {
+  const w = window.innerWidth, hh = window.innerHeight;
+  if (!force && w === fitW && Math.abs(hh - fitH) < 120) return;
+  fitW = w; fitH = hh;
+  // iOS passt die Kacheln nach dem Drehen nicht immer an: neu aufbauen erzwingt das Layout.
+  const btns = document.querySelector(".buttons");
+  btns.style.display = "none";
+  void btns.offsetHeight;
+  btns.style.display = "";
+  applyTiles();
+  if (lastDeps && current && !openRow && $("picker").hidden) render(lastDeps);
+}
 window.addEventListener("resize", () => {
   clearTimeout(fitTimer);
-  fitTimer = setTimeout(() => {
-    const w = window.innerWidth, hh = window.innerHeight;
-    if (w === fitW && Math.abs(hh - fitH) < 120) return;
-    fitW = w; fitH = hh;
-    if (lastDeps && current && !openRow && $("picker").hidden) render(lastDeps);
-  }, 200);
+  fitTimer = setTimeout(() => refit(false), 200);
 });
+// Manche iPhones melden die neue Größe erst kurz nach dem Drehen.
+window.addEventListener("orientationchange", () => {
+  setTimeout(() => refit(true), 350);
+  setTimeout(() => refit(true), 800);
+});
+if (screen.orientation && screen.orientation.addEventListener) {
+  screen.orientation.addEventListener("change", () => setTimeout(() => refit(true), 350));
+}
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) { hiddenAt = Date.now(); return; }
   // Nach längerer Pause zurück auf „Jetzt“, damit nichts Veraltetes stehen bleibt.
