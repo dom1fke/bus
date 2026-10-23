@@ -121,15 +121,67 @@
   #setup .row button { font: inherit; padding: 10px 14px; border-radius: 10px;
     border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); }
   #setup .row button.sec { background: transparent; color: var(--accent); }
+  #setup h2 { font-size: 14px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 12px; }
+  #setup .group { border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px; margin-bottom: 10px; background: var(--bg); }
+  #setup .ghead { display: flex; align-items: center; gap: 8px; padding: 8px 0 6px; }
+  #setup input.gname { flex: 1; min-width: 0; font: inherit; font-size: 18px; font-weight: 700; color: var(--accent);
+    background: transparent; border: 0; padding: 4px 0; border-radius: 6px; }
+  #setup .gedit { flex: none; font-size: 13px; color: var(--muted); }
+  #setup button.field { display: flex; width: 100%; align-items: center; gap: 10px; padding: 11px 0; text-align: left;
+    font: inherit; color: var(--fg); background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+  #setup button.field:disabled { color: var(--muted); }
+  #setup .dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--accent); flex: none; }
+  #setup .dot.f { background: var(--accent); }
+  #setup .lbl { width: 40px; flex: none; font-size: 13px; color: var(--muted); }
+  #setup .val { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  #setup .arrow { color: var(--muted); flex: none; }
+  #setup .lines { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 0 12px;
+    border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  #setup .lines .lbl { margin-right: 2px; }
+  #setup .lchip { font: inherit; font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 7px;
+    border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); }
+  #setup .lchip[aria-pressed="false"] { background: transparent; border-color: var(--line); color: var(--muted);
+    font-weight: 500; text-decoration: line-through; }
+  #setup .switch { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted);
+    margin: 2px 0 12px 2px; cursor: pointer; }
+  #setup .switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  #setup .tgl { width: 42px; height: 26px; border-radius: 13px; background: var(--line); position: relative; flex: none;
+    transition: background-color .2s ease; }
+  #setup .tgl::after { content: ""; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; transition: transform .2s ease; }
+  #setup .switch input:checked + .tgl { background: var(--accent); }
+  #setup .switch input:checked + .tgl::after { transform: translateX(16px); }
+  #setup .switch input:focus-visible + .tgl { outline: 3px solid var(--accent); outline-offset: 2px; }
+  #setup .wlabel { margin-top: 14px; }
+  /* Haltestellensuche: eigene Seite über allem */
+  .picker { position: fixed; inset: 0; z-index: 30; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .picker[hidden] { display: none; }
+  .pkin { max-width: 480px; margin: 0 auto;
+    padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+             max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .pkback { font: inherit; font-size: 16px; color: var(--accent); background: none; border: 0; padding: 6px 0; }
+  .picker h2 { font-size: 22px; margin: 4px 0 12px; }
+  #pkInput { width: 100%; font: inherit; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--accent);
+    background: var(--card); color: var(--fg); -webkit-appearance: none; appearance: none; }
+  #pkInput:focus-visible { outline: none; }
+  .pkopt { display: block; width: 100%; text-align: left; font: inherit; color: var(--fg); background: none; border: 0;
+    border-bottom: 1px solid var(--line); border-radius: 0; padding: 14px 4px; overflow-wrap: anywhere; }
+  .pkopt b { color: var(--accent); font-weight: 700; }
+  .pknote { color: var(--muted); font-size: 14px; padding: 14px 4px; }
+  .pkhead { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 18px 0 2px 2px; }
+  .pkhead[hidden] { display: none; }
+  .side { display: contents; }
   /* Handy quer: zwei Spalten. Gilt nur im Querformat, das Hochformat bleibt unverändert. */
   @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
     main { max-width: 900px; display: grid; grid-template-columns: minmax(220px, 32%) 1fr; column-gap: 24px;
-      grid-template-rows: auto auto auto 1fr auto auto;
-      grid-template-areas: "top out" "btns out" "chip out" ". out" ". foot" ". setup"; align-items: start; }
-    .top { grid-area: top; margin-bottom: 10px; }
-    .buttons { grid-area: btns; grid-template-columns: 1fr; gap: 8px; }
-    button.dir { min-height: 0; font-size: 19px; padding: 10px 12px; }
-    #whenChip { grid-area: chip; margin-top: 10px; }
+      grid-template-rows: auto auto 1fr;
+      grid-template-areas: "side out" "side foot" "side setup"; align-items: start; }
+    .side { display: block; grid-area: side; position: sticky; top: max(10px, env(safe-area-inset-top)); }
+    .top { margin-bottom: 10px; }
+    .buttons { grid-template-columns: 1fr; gap: 8px; }
+    button.dir { min-height: 0; height: auto; font-size: 19px; padding: 10px 12px 12px; }
+    #whenChip { margin-top: 10px; }
     #out { grid-area: out; margin-top: 0; }
     .foot { grid-area: foot; }
     #setup { grid-area: setup; }
@@ -143,6 +195,7 @@
 </head>
 <body>
 <main>
+  <div class="side">
   <div class="top">
     <h1>Bus Naurod ⇄ Wiesbaden</h1>
     <div class="tools">
@@ -163,6 +216,7 @@
     <span id="whenText"></span>
     <button id="whenClear" type="button" aria-label="Zurück zu Jetzt">✕</button>
   </div>
+  </div>
 
   <div id="out" aria-live="polite"></div>
 
@@ -172,12 +226,28 @@
   </div>
 
   <section id="setup">
-    <label for="worker">Worker-Adresse (https://….workers.dev)</label>
+    <h2>Einstellungen</h2>
+    <div class="group" data-dir="in"></div>
+    <label class="switch"><input type="checkbox" id="mirror"><span class="tgl" aria-hidden="true"></span>Rückweg = Hinweg umgekehrt</label>
+    <div class="group" data-dir="out"></div>
+    <label for="worker" class="wlabel">Worker-Adresse (https://….workers.dev)</label>
     <input id="worker" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false">
     <div class="row">
       <button id="saveKey">Speichern</button>    </div>
   </section>
 </main>
+
+<div id="picker" class="picker" hidden role="dialog" aria-modal="true" aria-labelledby="pkTitle">
+  <div class="pkin">
+    <button id="pkBack" class="pkback" type="button">‹ Einstellungen</button>
+    <h2 id="pkTitle">Starthaltestelle</h2>
+    <input id="pkInput" type="text" placeholder="Haltestelle suchen" autocomplete="off" autocorrect="off"
+      autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Haltestelle suchen">
+    <div id="pkList" aria-live="polite"></div>
+    <div id="pkRecentHead" class="pkhead">Zuletzt gewählt</div>
+    <div id="pkRecent"></div>
+  </div>
+</div>
 
 <div id="sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
   <div class="panel">
@@ -198,15 +268,15 @@
 "use strict";
 // ---- Konfiguration -------------------------------------------------------
 // Adresse deines Cloudflare Workers; wird in den Einstellungen gespeichert.
-const LINES = ["20", "21", "22", "N20"];
-const STOPS = {
-  naurod: { query: "Naurod Fondetter Straße", mustContain: "fondetter", id: "3025442", name: "WI-Naurod Fondetter Straße" },
-  stadt:  { query: "Wiesbaden Wilhelmstraße",  mustContain: "wilhelmstra" },
-  ziel:   { query: "Wiesbaden Dernsches Gelände", mustContain: "dern" }
-};
-const ROUTES = {
-  in:  { from: "naurod", to: "ziel" },
-  out: { from: "stadt",  to: "naurod" }
+// Haltestellen je Richtung; in den Einstellungen änderbar. Ohne gespeicherte
+// Kennung (id) wird die Haltestelle beim ersten Abruf per Name gesucht.
+const NAUROD = { id: "3025442", name: "WI-Naurod Fondetter Straße", label: "Fondetter Straße" };
+const DEFAULT_CFG = {
+  mirror: false,
+  in:  { name: "In die Stadt",  off: [], from: NAUROD,
+         to: { query: "Wiesbaden Dernsches Gelände", must: "dern", label: "Dernsches Gelände" } },
+  out: { name: "Aus der Stadt", off: [], to: NAUROD,
+         from: { query: "Wiesbaden Wilhelmstraße", must: "wilhelmstra", label: "Wilhelmstraße" } }
 };
 
 // ---- Speicher (kann in privaten Fenstern fehlen) --------------------------
@@ -226,6 +296,50 @@ let openRow = null;       // gerade aufgeklappter Eintrag
 const traceCache = new Map();
 let slideFrom = 0;        // Richtung der Einblendung nach einem Wischen (px), 0 = normal
 let animateNext = true;   // Einträge nur beim Öffnen und beim Wechsel einblenden, nicht bei jeder Aktualisierung
+let lastDeps = null;      // letzte Abfahrten, um nach dem Drehen neu einzupassen
+
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function loadCfg() {
+  let c = null;
+  try { c = JSON.parse(store.get("cfg") || "null"); } catch (e) { c = null; }
+  if (!c || !c.in || !c.out) {
+    c = clone(DEFAULT_CFG);
+    // Bereits früher gefundene Haltestellen übernehmen.
+    const z = store.get("stop_ziel"), s = store.get("stop_stadt");
+    if (z) { c.in.to.id = z; c.in.to.name = store.get("stopname_ziel") || c.in.to.label; }
+    if (s) { c.out.from.id = s; c.out.from.name = store.get("stopname_stadt") || c.out.from.label; }
+  }
+  return c;
+}
+let cfg = loadCfg();
+function saveCfg() { store.set("cfg", JSON.stringify(cfg)); }
+
+// Start, Ziel, Name und abgewählte Linien einer Richtung.
+function routeOf(c, dir) {
+  const r = c[dir];
+  if (dir === "out" && c.mirror) return { name: r.name, off: r.off || [], from: c.in.to, to: c.in.from };
+  return { name: r.name, off: r.off || [], from: r.from, to: r.to };
+}
+function shortName(n) {
+  return (n || "").replace(/^(Wiesbaden|WI)[\s-]+/i, "").trim();
+}
+function stopLabel(s) { return (s && (s.label || shortName(s.name))) || "–"; }
+function seenKey(fromId, toId) { return "seen_" + fromId + "_" + toId; }
+function seenLines(fromId, toId) {
+  try { return JSON.parse(store.get(seenKey(fromId, toId)) || "[]"); } catch (e) { return []; }
+}
+const byLine = (a, b) => a.localeCompare(b, "de", { numeric: true });
+
+function applyTiles() {
+  [["in", "btnIn"], ["out", "btnOut"]].forEach(([dir, id]) => {
+    const r = routeOf(cfg, dir);
+    const b = $(id);
+    b.textContent = r.name || (dir === "in" ? "In die Stadt" : "Aus der Stadt");
+    const s = document.createElement("small");
+    s.textContent = stopLabel(r.from) + " → " + stopLabel(r.to);
+    b.appendChild(s);
+  });
+}
 
 // ---- Hilfsfunktionen -----------------------------------------------------
 function norm(s) {
@@ -249,20 +363,23 @@ async function hapi(path, params) {
   return data;
 }
 
-async function stopId(name) {
-  const cfg = STOPS[name];
-  if (cfg.id) return cfg.id;
-  const cached = store.get("stop_" + name);
-  if (cached) return cached;
-  const data = await hapi("location.name", { input: cfg.query });
-  const list = (data.stopLocationOrCoordLocation || [])
-    .map((x) => x.StopLocation).filter(Boolean);
-  const hit = list.find((s) => norm(s.name).includes(cfg.mustContain)) || list[0];
-  if (!hit) throw new Error("Haltestelle „" + cfg.query + "“ nicht gefunden.");
-  const id = hit.extId || hit.id;
-  store.set("stop_" + name, id);
-  store.set("stopname_" + name, hit.name);
-  return id;
+async function searchStops(text) {
+  const data = await hapi("location.name", { input: text, type: "S", maxNo: 12 });
+  return (data.stopLocationOrCoordLocation || [])
+    .map((x) => x.StopLocation).filter(Boolean)
+    .map((s) => ({ id: String(s.extId || s.id), name: s.name }));
+}
+
+// Liefert die Kennung einer Haltestelle; fehlt sie, wird einmalig per Name gesucht.
+async function stopId(stop) {
+  if (stop.id) return stop.id;
+  const list = await searchStops(stop.query);
+  const hit = list.find((s) => norm(s.name).includes(stop.must || "")) || list[0];
+  if (!hit) throw new Error("Haltestelle „" + stop.query + "“ nicht gefunden.");
+  stop.id = hit.id;
+  stop.name = hit.name;
+  saveCfg();
+  return stop.id;
 }
 
 function parseTime(date, time) {
@@ -310,9 +427,9 @@ function sliceStops(stops) {
     const i = stops.findIndex((s) => String(s.extId || "") === String(routeIds.fromId));
     if (i >= 0) a = i;
     let j = stops.findIndex((s, k) => k > a && String(s.extId || "") === String(routeIds.toId));
-    if (j < 0) {
-      const key = STOPS[routeIds.toKey].mustContain;
-      j = stops.findIndex((s, k) => k > a && norm(s.name).includes(key));
+    if (j < 0 && routeIds.toName) {
+      const key = norm(routeIds.toName);
+      j = stops.findIndex((s, k) => k > a && norm(s.name) === key);
     }
     if (j >= 0) b = j;
   }
@@ -412,18 +529,24 @@ function dayLabel(d) {
 async function load() {
   const out = $("out");
   if (!current) { out.innerHTML = ""; return; }
-  const route = ROUTES[current];
+  const route = routeOf(cfg, current);
   try {
     const fromId = await stopId(route.from);
     const toId = await stopId(route.to);
-    routeIds = { fromId, toId, toKey: route.to };
-    const params = {
-      id: fromId, direction: toId, lines: LINES.join(","), maxJourneys: 15, duration: 720
-    };
+    routeIds = { fromId, toId, toName: route.to.name };
+    // Ohne Linienfilter: alle Linien, die von der Start- zur Zielhaltestelle fahren.
+    const params = { id: fromId, direction: toId, maxJourneys: 20, duration: 720 };
     if (when) { params.date = ymd(when); params.time = hm(when); }
     let data = await hapi("departureBoard", params);
     let deps = data.Departure || [];
-    deps = deps.filter((d) => LINES.includes(lineOf(d)));
+    if (!Array.isArray(deps)) deps = [deps];
+    // Gefundene Linien merken, damit man sie in den Einstellungen abwählen kann.
+    const seen = new Set(seenLines(fromId, toId));
+    deps.forEach((d) => { const l = lineOf(d); if (l) seen.add(l); });
+    store.set(seenKey(fromId, toId), JSON.stringify([...seen].sort(byLine)));
+    const off = route.off;
+    deps = deps.filter((d) => !off.includes(lineOf(d)));
+    lastDeps = deps;
     render(deps);
   } catch (e) {
     out.innerHTML = "";
@@ -455,9 +578,11 @@ function render(deps) {
   if (!rows.length) {
     const m = document.createElement("div");
     m.className = "msg";
+    const r = routeOf(cfg, current);
+    const way = " von " + stopLabel(r.from) + " nach " + stopLabel(r.to);
     m.textContent = when
-      ? "Keine Abfahrten der Linien 20, 21, 22 oder N20 in den 12 Stunden ab " + fmt(when) + "."
-      : "Keine Abfahrten der Linien 20, 21, 22 oder N20 in den nächsten 12 Stunden.";
+      ? "Keine Abfahrten" + way + " in den 12 Stunden ab " + fmt(when) + "."
+      : "Keine Abfahrten" + way + " in den nächsten 12 Stunden.";
     out.appendChild(m);
   }
 
@@ -522,7 +647,8 @@ function render(deps) {
   // Der Home-Balken ist dünn, ein kleiner Abstand reicht, damit möglichst viel Platz genutzt wird.
   padB = Math.min(padB, 10);
   const foot = document.querySelector(".foot");
-  while (out.children.length > 3 && foot.getBoundingClientRect().bottom + padB > window.innerHeight) {
+  // Gemessen ab Seitenanfang, damit es auch nach dem Scrollen stimmt.
+  while (out.children.length > 3 && foot.getBoundingClientRect().bottom + window.scrollY + padB > window.innerHeight) {
     out.removeChild(out.lastElementChild);
   }
 }
@@ -547,7 +673,7 @@ function select(dir) {
 let swipe = null;
 document.addEventListener("touchstart", (e) => {
   swipe = null;
-  if (e.touches.length !== 1 || !$("sheet").hidden) return;
+  if (e.touches.length !== 1 || !$("sheet").hidden || !$("picker").hidden) return;
   if (e.target.closest("input, #setup")) return;
   const t = e.touches[0];
   if (t.clientX < 24 || t.clientX > window.innerWidth - 24) return;
@@ -572,6 +698,8 @@ $("btnOut").addEventListener("click", () => select("out"));
 // Einstellungen: beim Öffnen sanft nach unten scrollen, beim Schließen erst sanft
 // nach oben und dann ausblenden, damit die Seite nicht springt.
 function openSetup() {
+  draft = clone(cfg);
+  buildSetup();
   $("setup").classList.add("open");
   requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }));
 }
@@ -634,7 +762,186 @@ $("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) close
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("sheet").hidden) closeSheet(); });
 $("saveKey").addEventListener("click", () => {
   const w = $("worker").value.trim();
-  if (w) { store.set("worker", w); closeSetup(() => { if (current) select(current); }); }
+  if (!w) { $("worker").focus(); return; }
+  store.set("worker", w);
+  if (draft) {
+    document.querySelectorAll("#setup input.gname").forEach((inp) => {
+      draft[inp.dataset.dir].name = inp.value.trim() || DEFAULT_CFG[inp.dataset.dir].name;
+    });
+    cfg = draft; draft = null;
+    saveCfg(); applyTiles();
+  }
+  closeSetup(() => { if (current) select(current); });
+});
+
+// ---- Einstellungen: Haltestellen und Linien ---------------------------------
+let draft = null;
+function buildSetup() {
+  $("mirror").checked = !!draft.mirror;
+  document.querySelectorAll("#setup .group").forEach((g) => {
+    const dir = g.dataset.dir;
+    const r = routeOf(draft, dir);
+    const locked = dir === "out" && draft.mirror;
+    g.textContent = "";
+    const head = document.createElement("div");
+    head.className = "ghead";
+    const name = document.createElement("input");
+    name.className = "gname"; name.dataset.dir = dir; name.maxLength = 24;
+    name.value = draft[dir].name; name.setAttribute("aria-label", "Name der Kachel");
+    name.addEventListener("input", () => { draft[dir].name = name.value; });
+    const ed = document.createElement("span");
+    ed.className = "gedit"; ed.textContent = "Name ändern";
+    ed.addEventListener("click", () => name.focus());
+    head.append(name, ed);
+    g.appendChild(head);
+    [["from", "Von", true], ["to", "Nach", false]].forEach(([end, lbl, first]) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "field"; b.disabled = locked;
+      b.innerHTML = '<span class="dot' + (first ? " f" : "") + '"></span><span class="lbl"></span><span class="val"></span>' +
+        (locked ? "" : '<span class="arrow">›</span>');
+      b.querySelector(".lbl").textContent = lbl;
+      b.querySelector(".val").textContent = stopLabel(r[end]);
+      b.addEventListener("click", () => openPicker(dir, end));
+      g.appendChild(b);
+    });
+    const lines = document.createElement("div");
+    lines.className = "lines";
+    const l = document.createElement("span");
+    l.className = "lbl"; l.textContent = "Linien";
+    lines.appendChild(l);
+    const seen = r.from.id && r.to.id ? seenLines(r.from.id, r.to.id) : [];
+    const off = draft[dir].off || (draft[dir].off = []);
+    const all = [...new Set([...seen, ...off])].sort(byLine);
+    if (!all.length) {
+      const n = document.createElement("span");
+      n.textContent = "alle – erscheinen nach der ersten Abfrage";
+      lines.appendChild(n);
+    }
+    all.forEach((ln) => {
+      const c = document.createElement("button");
+      c.type = "button"; c.className = "lchip"; c.textContent = ln;
+      c.setAttribute("aria-pressed", String(!off.includes(ln)));
+      c.setAttribute("aria-label", "Linie " + ln + " anzeigen");
+      c.addEventListener("click", () => {
+        const i = off.indexOf(ln);
+        if (i >= 0) off.splice(i, 1); else off.push(ln);
+        c.setAttribute("aria-pressed", String(i >= 0));
+      });
+      lines.appendChild(c);
+    });
+    g.appendChild(lines);
+  });
+}
+$("mirror").addEventListener("change", () => {
+  if (!draft) return;
+  // Namen aus den Feldern nicht verlieren.
+  document.querySelectorAll("#setup input.gname").forEach((inp) => { draft[inp.dataset.dir].name = inp.value; });
+  draft.mirror = $("mirror").checked;
+  draft.out.off = [];
+  buildSetup();
+});
+
+// ---- Haltestellensuche (eigene Seite) --------------------------------------
+let pick = null, pickTimer = null, pickSeq = 0, pickScroll = 0;
+function recentStops() {
+  try { return JSON.parse(store.get("recent_stops") || "[]"); } catch (e) { return []; }
+}
+function rememberStop(s) {
+  const list = recentStops().filter((x) => x.id !== s.id);
+  list.unshift({ id: s.id, name: s.name });
+  store.set("recent_stops", JSON.stringify(list.slice(0, 5)));
+}
+function stopButton(s, query) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "pkopt";
+  const n = s.name || "";
+  const i = query ? norm(n).indexOf(norm(query)) : -1;
+  if (i >= 0) {
+    // norm() ändert nur ß → ss, daher Länge über den Originaltext suchen.
+    let len = query.length;
+    while (len < n.length && norm(n.slice(i, i + len)).length < norm(query).length) len++;
+    b.append(n.slice(0, i));
+    const m = document.createElement("b"); m.textContent = n.slice(i, i + len);
+    b.append(m, n.slice(i + len));
+  } else {
+    b.textContent = n;
+  }
+  b.addEventListener("click", () => choose(s));
+  return b;
+}
+function showRecent() {
+  const list = recentStops();
+  $("pkRecent").textContent = "";
+  list.forEach((s) => $("pkRecent").appendChild(stopButton(s, "")));
+  $("pkRecentHead").hidden = !list.length;
+}
+function openPicker(dir, end) {
+  pick = { dir, end };
+  pickScroll = window.scrollY;
+  $("pkTitle").textContent = end === "from" ? "Starthaltestelle" : "Zielhaltestelle";
+  $("pkInput").value = "";
+  $("pkList").textContent = "";
+  showRecent();
+  $("picker").hidden = false;
+  $("picker").scrollTop = 0;
+  $("pkInput").focus();
+}
+function closePicker() {
+  $("picker").hidden = true;
+  pick = null;
+  clearTimeout(pickTimer);
+  window.scrollTo(0, pickScroll);
+}
+function choose(s) {
+  if (!pick || !draft) return;
+  const { dir, end } = pick;
+  draft[dir][end] = { id: s.id, name: s.name, label: shortName(s.name) };
+  draft[dir].off = [];                       // andere Strecke, andere Linien
+  if (dir === "in" && draft.mirror) draft.out.off = [];
+  rememberStop(s);
+  document.querySelectorAll("#setup input.gname").forEach((inp) => { draft[inp.dataset.dir].name = inp.value; });
+  closePicker();
+  buildSetup();
+}
+$("pkBack").addEventListener("click", closePicker);
+$("pkInput").addEventListener("input", () => {
+  clearTimeout(pickTimer);
+  const q = $("pkInput").value.trim();
+  const box = $("pkList");
+  if (q.length < 2) { box.textContent = ""; showRecent(); return; }
+  $("pkRecentHead").hidden = true; $("pkRecent").textContent = "";
+  pickTimer = setTimeout(async () => {
+    const seq = ++pickSeq;
+    try {
+      const list = await searchStops(q);
+      if (seq !== pickSeq) return;          // inzwischen weitergetippt
+      box.textContent = "";
+      if (!list.length) {
+        const n = document.createElement("div"); n.className = "pknote"; n.textContent = "Keine Haltestelle gefunden.";
+        box.appendChild(n); return;
+      }
+      list.forEach((s) => box.appendChild(stopButton(s, q)));
+    } catch (e) {
+      if (seq !== pickSeq) return;
+      box.textContent = "";
+      const n = document.createElement("div"); n.className = "pknote"; n.textContent = e.message || String(e);
+      box.appendChild(n);
+    }
+  }, 250);
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("picker").hidden) closePicker(); });
+
+// Nach dem Drehen oder einer Größenänderung neu einpassen.
+// Kleine Höhenänderungen (Browserleiste ein-/ausgeblendet) lösen nichts aus.
+let fitTimer = null, fitW = window.innerWidth, fitH = window.innerHeight;
+window.addEventListener("resize", () => {
+  clearTimeout(fitTimer);
+  fitTimer = setTimeout(() => {
+    const w = window.innerWidth, hh = window.innerHeight;
+    if (w === fitW && Math.abs(hh - fitH) < 120) return;
+    fitW = w; fitH = hh;
+    if (lastDeps && current && !openRow && $("picker").hidden) render(lastDeps);
+  }, 200);
 });
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) { hiddenAt = Date.now(); return; }
@@ -643,8 +950,9 @@ document.addEventListener("visibilitychange", () => {
   else if (current && !when) { animateNext = true; load(); }
 });
 
+applyTiles();
 $("worker").value = store.get("worker") || "";
-if (!store.get("worker")) $("setup").classList.add("open");
+if (!store.get("worker")) { draft = clone(cfg); buildSetup(); $("setup").classList.add("open"); }
 if (current) select(current);
 </script>
 </body>
