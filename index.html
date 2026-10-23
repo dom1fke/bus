@@ -193,8 +193,10 @@
   .pkhead[hidden] { display: none; }
   .side { display: contents; }
   /* Handy quer: zwei Spalten. Gilt nur im Querformat, das Hochformat bleibt unverändert. */
-  @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
-    main { max-width: 900px; display: grid; grid-template-columns: minmax(220px, 32%) 1fr; column-gap: 24px;
+  /* Gilt für Handys quer und für breite Fenster am Computer. */
+  @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse),
+         (orientation: landscape) and (min-width: 800px) {
+    main { max-width: 1000px; display: grid; grid-template-columns: minmax(220px, 32%) 1fr; column-gap: 24px;
       grid-template-rows: auto auto 1fr;
       grid-template-areas: "side out" "side foot" "side setup"; align-items: start; }
     .side { display: block; grid-area: side; position: sticky; top: max(10px, env(safe-area-inset-top)); }
@@ -724,11 +726,17 @@ function render(deps) {
     if (when) {
       big.textContent = fmt(r.real);
     } else {
-      big.textContent = mins === 0 ? "jetzt" : mins + " min";
+      // Ab einer Stunde die Uhrzeit groß zeigen, das liest sich leichter als „340 min“.
+      big.textContent = mins === 0 ? "jetzt" : mins >= 60 ? fmt(r.real) : mins + " min";
       if (!r.cancelled && mins <= 5) eta.classList.add("soon");
     }
     const t = document.createElement("span");
-    t.textContent = (when ? dayLabel(r.real) : fmt(r.real)) + " ";
+    let small = when ? dayLabel(r.real) : fmt(r.real);
+    if (!when && mins >= 60) {
+      const hh = Math.floor(mins / 60), mm = mins % 60;
+      small = "in " + hh + " Std" + (mm ? " " + mm + " Min" : "");
+    }
+    t.textContent = small + " ";
     if (ref) {
       const chev = document.createElement("span");
       chev.className = "chev";
