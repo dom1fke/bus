@@ -100,7 +100,6 @@
   <section id="setup">
     <label for="worker">Worker-Adresse (https://….workers.dev)</label>
     <input id="worker" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false">
-    <div class="msg" id="stopinfo"></div>
     <div class="row">
       <button id="saveKey">Speichern</button>    </div>
   </section>
@@ -261,10 +260,7 @@ function render(deps) {
     out.appendChild(el);
   });
 
-  $("stamp").textContent = "Stand " + fmt(new Date());
-  $("stopinfo").textContent = "Haltestellen: " + STOPS.naurod.name + " / " +
-    (store.get("stopname_stadt") || "–") + " / " + (store.get("stopname_ziel") || "–");
-}
+  $("stamp").textContent = "Stand " + fmt(new Date());}
 
 // ---- Bedienung -----------------------------------------------------------
 function select(dir) {
