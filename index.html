@@ -35,6 +35,19 @@
     border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--accent); padding: 0; }
   .iconbtn svg { display: block; }
   .iconbtn.on { background: var(--accent); color: var(--accent-fg); }
+  .iconbtn[hidden] { display: none; }
+  #whenClear { font-size: 18px; color: var(--muted); }
+  #title.set { color: var(--accent); }
+  /* Platzhalter, solange noch keine Abfahrten vorliegen */
+  .dep.skel { pointer-events: none; }
+  .skel .sk { background: var(--line); border-radius: 6px; animation: skel 1.2s ease-in-out infinite; }
+  .skel .badge.sk { background: var(--line); color: transparent; }
+  .skel .sk.l1 { height: 18px; width: 70%; margin-bottom: 7px; }
+  .skel .sk.l2 { height: 12px; width: 35%; }
+  .skel .sk.e1 { height: 26px; width: 74px; margin: 0 0 6px auto; }
+  .skel .sk.e2 { height: 12px; width: 44px; margin-left: auto; }
+  @keyframes skel { 50% { opacity: .45; } }
+  @media (prefers-reduced-motion: reduce) { .skel .sk { animation: none; } }
   .chip { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px;
     padding: 6px 6px 6px 14px; border: 1px solid var(--accent); border-radius: 12px; color: var(--accent); font-size: 15px; }
   .chip[hidden] { display: none; }
@@ -181,7 +194,6 @@
     .top { margin-bottom: 10px; }
     .buttons { grid-template-columns: 1fr; gap: 8px; }
     button.dir { min-height: 0; height: auto; font-size: 19px; padding: 10px 12px 12px; }
-    #whenChip { margin-top: 10px; }
     #out { grid-area: out; margin-top: 0; }
     .foot { grid-area: foot; }
     #setup { grid-area: setup; }
@@ -197,8 +209,9 @@
 <main>
   <div class="side">
   <div class="top">
-    <h1 id="title">Bus Naurod ⇄ Wiesbaden</h1>
+    <h1 id="title">Abfahrten jetzt</h1>
     <div class="tools">
+    <button id="whenClear" class="iconbtn" type="button" aria-label="Zurück zu Jetzt" hidden>✕</button>
     <button id="when" class="iconbtn" type="button" aria-label="Tag und Uhrzeit wählen">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
     </button>
@@ -212,10 +225,6 @@
       <small>Wilhelmstraße → Fondetter Straße</small></button>
   </div>
 
-  <div id="whenChip" class="chip" hidden>
-    <span id="whenText"></span>
-    <button id="whenClear" type="button" aria-label="Zurück zu Jetzt">✕</button>
-  </div>
   </div>
 
   <div id="out" aria-live="polite"></div>
@@ -341,8 +350,7 @@ function applyTitle() {
   let a = placeOf(r.from), b = placeOf(r.to);
   // Liegen beide Haltestellen im selben Ort, die Haltestellen selbst nennen.
   if (!a || !b || a === b) { a = stopLabel(r.from); b = stopLabel(r.to); }
-  $("title").textContent = "Bus " + a + " ⇄ " + b;
-  document.title = "Bus " + a;
+  document.title = "Bus " + a + " ⇄ " + b;
 }
 function applyTiles() {
   applyTitle();
@@ -541,35 +549,106 @@ function dayLabel(d) {
 }
 
 // ---- Abfrage -------------------------------------------------------------
-async function load() {
-  const out = $("out");
-  if (!current) { out.innerHTML = ""; return; }
-  const route = routeOf(cfg, current);
-  try {
+// Beide Richtungen werden vorgehalten, damit der Wechsel ohne Wartezeit klappt.
+let cache = {};             // dir -> { key, deps, ids, at }
+const pending = {};         // dir -> laufende Abfrage
+let animUntil = 0;          // bis wann die Einblendung läuft
+
+function cacheKey(dir) {
+  const r = routeOf(cfg, dir);
+  return (r.from.id || r.from.query) + "|" + (r.to.id || r.to.query) + "|" + (when ? when.getTime() : "jetzt");
+}
+
+function fetchDir(dir) {
+  const key = cacheKey(dir);
+  if (pending[dir] && pending[dir].key === key) return pending[dir].p;
+  const p = (async () => {
+    const route = routeOf(cfg, dir);
     const fromId = await stopId(route.from);
     const toId = await stopId(route.to);
-    routeIds = { fromId, toId, toName: route.to.name };
     // Ohne Linienfilter: alle Linien, die von der Start- zur Zielhaltestelle fahren.
     const params = { id: fromId, direction: toId, maxJourneys: 20, duration: 720 };
     if (when) { params.date = ymd(when); params.time = hm(when); }
-    let data = await hapi("departureBoard", params);
+    const data = await hapi("departureBoard", params);
     let deps = data.Departure || [];
     if (!Array.isArray(deps)) deps = [deps];
     // Gefundene Linien merken, damit man sie in den Einstellungen abwählen kann.
     const seen = new Set(seenLines(fromId, toId));
     deps.forEach((d) => { const l = lineOf(d); if (l) seen.add(l); });
     store.set(seenKey(fromId, toId), JSON.stringify([...seen].sort(byLine)));
-    const off = route.off;
-    deps = deps.filter((d) => !off.includes(lineOf(d)));
-    lastDeps = deps;
-    render(deps);
-  } catch (e) {
-    out.innerHTML = "";
-    const m = document.createElement("div");
-    m.className = "msg err";
-    m.textContent = e.message || String(e);
-    out.appendChild(m);
+    const entry = { key: cacheKey(dir), deps, ids: { fromId, toId, toName: route.to.name }, at: Date.now() };
+    // Schlüssel erst nach dem Auflösen der Haltestellen vergleichen (Name → Kennung).
+    if (entry.key === cacheKey(dir)) cache[dir] = entry;
+    return entry;
+  })();
+  pending[dir] = { key, p };
+  p.finally(() => { if (pending[dir] && pending[dir].p === p) delete pending[dir]; }).catch(() => {});
+  return p;
+}
+
+function fresh(dir, maxAge) {
+  const c = cache[dir];
+  return c && c.key === cacheKey(dir) && Date.now() - c.at < maxAge ? c : null;
+}
+
+function show(entry) {
+  routeIds = entry.ids;
+  const off = routeOf(cfg, current).off;
+  lastDeps = entry.deps.filter((d) => !off.includes(lineOf(d)));
+  render(lastDeps);
+}
+
+function showSkeleton() {
+  const out = $("out");
+  out.innerHTML = "";
+  for (let i = 0; i < 5; i++) {
+    const el = document.createElement("div");
+    el.className = "dep skel";
+    el.innerHTML = '<div class="badge sk">00</div><div><div class="sk l1"></div><div class="sk l2"></div></div>' +
+                   '<div><div class="sk e1"></div><div class="sk e2"></div></div>';
+    out.appendChild(el);
   }
+}
+
+function showError(e) {
+  const out = $("out");
+  // Stehen schon Abfahrten da, bleiben sie; nur der Stand zeigt das Problem.
+  if (out.querySelector(".dep:not(.skel)")) {
+    $("stamp").textContent = "Aktualisierung fehlgeschlagen";
+    return;
+  }
+  out.innerHTML = "";
+  const m = document.createElement("div");
+  m.className = "msg err";
+  m.textContent = e.message || String(e);
+  out.appendChild(m);
+}
+
+// Aktuelle Richtung neu laden. Ohne Einblendung wird nur ersetzt, wenn sich etwas geändert hat.
+async function load() {
+  if (!current) { $("out").innerHTML = ""; return; }
+  const dir = current, key = cacheKey(dir);
+  const before = cache[dir] && cache[dir].key === key ? JSON.stringify(cache[dir].deps) : null;
+  try {
+    const entry = await fetchDir(dir);
+    if (dir !== current || entry.key !== cacheKey(dir) || openRow) return;
+    const changed = JSON.stringify(entry.deps) !== before;
+    const wait = Math.max(0, animUntil - Date.now());
+    if (animateNext || changed || !$("out").querySelector(".dep:not(.skel)")) {
+      setTimeout(() => { if (dir === current && !openRow) show(entry); }, animateNext ? 0 : wait);
+    } else {
+      $("stamp").textContent = "Stand " + fmt(new Date());
+    }
+  } catch (e) {
+    if (dir === current) showError(e);
+  }
+}
+
+// Die andere Richtung still im Hintergrund vorhalten.
+function prefetchOther() {
+  if (!current) return;
+  const other = current === "in" ? "out" : "in";
+  if (!fresh(other, 25000)) fetchDir(other).catch(() => {});
 }
 
 function render(deps) {
@@ -577,6 +656,7 @@ function render(deps) {
   out.innerHTML = "";
   const anim = animateNext;
   animateNext = false;
+  if (anim) animUntil = Date.now() + 900;
   const slideDx = anim ? slideFrom : 0;
   slideFrom = 0;
   openRow = null;
@@ -676,11 +756,18 @@ function select(dir) {
   document.querySelector(".buttons").classList.add("has-sel");
   $("btnIn").setAttribute("aria-pressed", String(dir === "in"));
   $("btnOut").setAttribute("aria-pressed", String(dir === "out"));
-  $("out").innerHTML = '<div class="msg">Lade Abfahrten …</div>';
-  load();
+  const c = fresh(dir, 5 * 60000);
+  if (c) {
+    show(c);                                 // sofort aus dem Vorrat, ohne Ladehinweis
+    if (Date.now() - c.at > 20000) load();   // und still auffrischen
+  } else {
+    showSkeleton();
+    load();
+  }
+  prefetchOther();
   clearInterval(timer);
   // Solange ein Verlauf aufgeklappt ist, bleibt die Liste stehen.
-  timer = setInterval(() => { if (!when && !openRow) load(); }, 30000);
+  timer = setInterval(() => { if (!when && !openRow) { load(); prefetchOther(); } }, 30000);
 }
 
 // Wischen nach links: „Aus der Stadt“, nach rechts: „In die Stadt“.
@@ -727,12 +814,9 @@ $("openSetup").addEventListener("click", () => {
 
 function updateWhenUI() {
   $("when").classList.toggle("on", !!when);
-  if (when) {
-    $("whenText").textContent = "Abfahrten ab " + dayLabel(when) + ", " + fmt(when);
-    $("whenChip").hidden = false;
-  } else {
-    $("whenChip").hidden = true;
-  }
+  $("whenClear").hidden = !when;
+  $("title").classList.toggle("set", !!when);
+  $("title").textContent = when ? "Abfahrten ab " + dayLabel(when) + ", " + fmt(when) : "Abfahrten jetzt";
 }
 function setWhen(d) {
   when = d;
@@ -785,6 +869,7 @@ $("saveKey").addEventListener("click", () => {
     });
     cfg = draft; draft = null;
     saveCfg(); applyTiles();
+    cache = {};
   }
   closeSetup(() => { if (current) select(current); });
 });
@@ -977,7 +1062,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) { hiddenAt = Date.now(); return; }
   // Nach längerer Pause zurück auf „Jetzt“, damit nichts Veraltetes stehen bleibt.
   if (when && Date.now() - hiddenAt > 300000) setWhen(null);
-  else if (current && !when) { animateNext = true; load(); }
+  else if (current && !when) { load(); prefetchOther(); }
 });
 
 applyTiles();
