@@ -179,12 +179,6 @@
   .msg { color: var(--muted); padding: 14px; overflow-wrap: anywhere; }
   .msg.err { color: var(--late); }
 
-  /* ---- Fuß ---- */
-  .foot { margin: 12px 4px 0; font-size: 13px; color: var(--muted); display: flex;
-    justify-content: space-between; align-items: center; gap: 12px; }
-  .foot button { font: inherit; font-size: 13px; background: none; border: 0; color: var(--muted);
-    text-decoration: underline; padding: 4px 0; cursor: pointer; }
-
   @media (prefers-reduced-motion: reduce) {
     .fade, .eta.soon strong, .hero.soon .big, .hero .k em i, .sk, .live.busy b { animation: none; }
     .seg button, .chev { transition: none; }
@@ -209,9 +203,29 @@
   .panel .err { color: var(--late); font-size: 14px; margin-top: 8px; }
 
   /* ---- Einstellungen ---- */
-  #setup { margin-top: 20px; display: none; background: var(--card); border: 1px solid var(--line);
-    border-radius: 18px; padding: 14px; }
-  #setup.open { display: block; }
+  /* Eigenes Fenster: auf dem Handy bildschirmfüllend, auf großen Bildschirmen mittig */
+  .settings { position: fixed; inset: 0; z-index: 25; background: var(--bg); overflow-y: auto;
+    -webkit-overflow-scrolling: touch; overscroll-behavior: contain; animation: sheetin .28s ease-out; }
+  @keyframes sheetin { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .setbox { max-width: 520px; margin: 0 auto;
+    padding: 0 max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .setbar { position: sticky; top: 0; z-index: 1; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    gap: 8px; padding: max(10px, env(safe-area-inset-top)) 0 10px; background: var(--bg);
+    border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .setbar h2 { margin: 0; font-size: 17px; font-weight: 700; text-align: center; }
+  .setbar button { font: inherit; font-size: 16px; color: var(--accent); background: none; border: 0; padding: 8px 0;
+    justify-self: start; cursor: pointer; }
+  .setbar button.strong { font-weight: 700; justify-self: end; }
+  @media (min-width: 700px) and (min-height: 560px) {
+    .settings { background: rgba(0, 0, 0, .5); display: flex; align-items: center; justify-content: center; padding: 24px;
+      animation: fadein .2s ease-out; }
+    @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+    .setbox { width: 100%; max-height: 100%; overflow-y: auto; background: var(--bg); border: 1px solid var(--line);
+      border-radius: 22px; padding: 0 20px 20px; box-shadow: 0 24px 70px rgba(0, 0, 0, .35); }
+    .setbar { padding-top: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .settings { animation: none; } }
+  #setup { padding-bottom: 8px; }
   #setup label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
   #setup input { width: 100%; font: inherit; padding: 12px; border-radius: 10px;
     border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
@@ -220,7 +234,7 @@
     border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); }
   #setup h2 { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
     color: var(--muted); margin: 0 0 12px; }
-  #setup .group { border: 1px solid var(--line); border-radius: 14px; padding: 4px 12px; margin-bottom: 10px; background: var(--bg); }
+  #setup .group { border: 1px solid var(--line); border-radius: 14px; padding: 4px 12px; margin-bottom: 10px; background: var(--card); }
   #setup .ghead { display: flex; align-items: center; gap: 8px; padding: 8px 0 6px; }
   #setup input.gname { flex: 1; min-width: 0; font: inherit; font-size: 18px; font-weight: 700; color: var(--fg);
     background: transparent; border: 0; padding: 4px 0; border-radius: 6px; }
@@ -276,14 +290,13 @@
     main { max-width: 1000px; display: grid; grid-template-columns: minmax(260px, 34%) 1fr; column-gap: 20px;
       padding-left: max(12px, calc(env(safe-area-inset-left) - 16px));
       padding-right: max(12px, calc(env(safe-area-inset-right) - 16px));
-      grid-template-areas: "side col" "side setup"; grid-template-rows: auto 1fr; align-items: start; }
+      grid-template-areas: "side col"; align-items: start; }
     .notch-left main { padding-left: max(16px, env(safe-area-inset-left));
       padding-right: max(12px, calc(env(safe-area-inset-right) - 36px)); }
     .notch-right main { padding-right: max(16px, env(safe-area-inset-right));
       padding-left: max(12px, calc(env(safe-area-inset-left) - 36px)); }
     .side { display: block; grid-area: side; position: sticky; top: max(10px, env(safe-area-inset-top)); }
     .col { grid-area: col; }
-    #setup { grid-area: setup; }
     h1 { font-size: 24px; }
     .seg { margin-top: 12px; }
     .route { margin-top: 8px; font-size: 13px; flex-wrap: wrap; row-gap: 2px; }
@@ -295,7 +308,6 @@
     .hdest { margin-top: 9px; padding-top: 9px; }
     .lh { margin-top: 2px; }
     .dep { padding: 8px 14px; }
-    .foot { margin-top: 8px; }
     .sheet { align-items: center; }
   }
 
@@ -349,23 +361,25 @@
   <div class="col">
     <div class="lh" id="listHead"><span>Danach</span><span class="hint">‹ wischen ›</span></div>
     <div id="out" class="list" aria-live="polite"></div>
-    <div class="foot">
-      <span id="linesInfo"></span>
-      <button id="openSetup" type="button">Einstellungen</button>
-    </div>
   </div>
+</main>
 
+<div id="settings" class="settings" hidden role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="setbox">
+  <div class="setbar">
+    <button id="setupCancel" type="button">Abbrechen</button>
+    <h2 id="setTitle">Einstellungen</h2>
+    <button id="saveKey" type="button" class="strong">Speichern</button>
+  </div>
   <section id="setup">
-    <h2>Einstellungen</h2>
     <div class="group" data-dir="in"></div>
     <label class="switch"><input type="checkbox" id="mirror"><span class="tgl" aria-hidden="true"></span>Rückweg = Hinweg umgekehrt</label>
     <div class="group" data-dir="out"></div>
     <label for="worker" class="wlabel">Worker-Adresse (https://….workers.dev)</label>
     <input id="worker" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false">
-    <div class="row">
-      <button id="saveKey">Speichern</button>    </div>
   </section>
-</main>
+  </div>
+</div>
 
 <div id="picker" class="picker" hidden role="dialog" aria-modal="true" aria-labelledby="pkTitle">
   <div class="pkin">
@@ -932,8 +946,6 @@ function render(deps) {
     .slice(0, 9);
 
   if (!when) setLive("Live · Stand " + fmt(new Date()) + " Uhr");
-  const lines = [...new Set(rows.map((r) => lineOf(r.d)).filter(Boolean))].sort(byLine);
-  $("linesInfo").textContent = lines.length ? "Linien " + lines.join(" · ") : "";
 
   if (!rows.length) {
     $("hero").hidden = true;
@@ -1009,7 +1021,7 @@ function render(deps) {
   let padB = parseFloat(getComputedStyle(document.querySelector("main")).paddingBottom) || 0;
   // Der Home-Balken ist dünn, ein kleiner Abstand reicht, damit möglichst viel Platz genutzt wird.
   padB = Math.min(padB, 10);
-  const foot = document.querySelector(".foot");
+  const foot = $("out");   // Unterkante der Liste
   // Am Computer steckt alles in einer mittigen Karte: dann zählt deren Unterkante samt Rand.
   const card = getComputedStyle(document.body).display === "flex";
   const mainEl = document.querySelector("main");
@@ -1062,7 +1074,7 @@ function select(dir) {
 let swipe = null;
 document.addEventListener("touchstart", (e) => {
   swipe = null;
-  if (e.touches.length !== 1 || !$("sheet").hidden || !$("picker").hidden) return;
+  if (e.touches.length !== 1 || !$("sheet").hidden || !$("picker").hidden || !$("settings").hidden) return;
   if (e.target.closest("input, #setup")) return;
   const t = e.touches[0];
   if (t.clientX < 24 || t.clientX > window.innerWidth - 24) return;
@@ -1096,22 +1108,26 @@ $("live").addEventListener("click", async () => {
 
 $("btnIn").addEventListener("click", () => select("in"));
 $("btnOut").addEventListener("click", () => select("out"));
-// Einstellungen: beim Öffnen sanft nach unten scrollen, beim Schließen erst sanft
-// nach oben und dann ausblenden, damit die Seite nicht springt.
+// Einstellungen als eigenes Fenster. „Abbrechen“ verwirft, „Speichern“ übernimmt.
 function openSetup() {
   draft = clone(cfg);
   buildSetup();
-  $("setup").classList.add("open");
-  requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }));
+  $("worker").value = store.get("worker") || "";
+  $("settings").hidden = false;
+  $("settings").scrollTop = 0;
+  document.documentElement.style.overflow = "hidden";
 }
 function closeSetup(after) {
-  smoothTop(() => { $("setup").classList.remove("open"); if (after) after(); });
+  $("settings").hidden = true;
+  document.documentElement.style.overflow = "";
+  draft = null;
+  if (after) after();
 }
-function toggleSetup() {
-  if ($("setup").classList.contains("open")) closeSetup(); else openSetup();
-}
-$("openSetup").addEventListener("click", toggleSetup);
-$("gear").addEventListener("click", toggleSetup);
+$("gear").addEventListener("click", openSetup);
+$("setupCancel").addEventListener("click", () => closeSetup());
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("settings").hidden && $("picker").hidden) closeSetup();
+});
 
 function updateWhenUI() {
   $("when").classList.toggle("on", !!when);
@@ -1174,7 +1190,7 @@ $("saveKey").addEventListener("click", () => {
     saveCfg(); applyTiles();
     cache = {};
   }
-  closeSetup(() => { if (current) select(current); });
+  closeSetup(() => { if (current) select(current); });  // lädt mit den neuen Einstellungen
 });
 
 // ---- Einstellungen: Haltestellen und Linien ---------------------------------
@@ -1383,7 +1399,7 @@ document.addEventListener("visibilitychange", () => {
 
 applyTiles();
 $("worker").value = store.get("worker") || "";
-if (!store.get("worker")) { draft = clone(cfg); buildSetup(); $("setup").classList.add("open"); }
+if (!store.get("worker")) openSetup();
 select(current || "in");
 </script>
 </body>
