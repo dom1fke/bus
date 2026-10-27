@@ -867,6 +867,9 @@ function buildHero(r, now, anim, slideDx) {
   h.className = "hero";
   h.textContent = "";
   h.removeAttribute("style");
+  // Der Block bleibt dasselbe Element: einmal neu messen lassen, damit die Einblendung
+  // bei jedem Wechsel von vorn startet (wie bei den neu gebauten Listeneinträgen).
+  if (anim) void h.offsetWidth;
   animate(h, 0, anim, slideDx);
   const mins = Math.max(0, Math.round((r.real - now) / 60000));
   const delay = Math.round((r.real - r.plan) / 60000);
